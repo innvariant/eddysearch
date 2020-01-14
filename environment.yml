@@ -1,9 +1,0 @@
-name: pyeddy
-channels:
-- defaults
-dependencies:
-- numpy
-- python>=3.6
-- pip>=10.0
-- matplotlib
-- seaborn
