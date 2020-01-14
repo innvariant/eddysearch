@@ -18,6 +18,13 @@ class Objective(object):
     _visualize_normalizer = matplotlib.colors.NoNorm()
 
     @property
+    def dims(self) -> int:
+        """
+        :return: Number of input dimensions for the objective function.
+        """
+        raise NotImplementedError()
+
+    @property
     def found_minimum(self):
         return self._found_minimum
 
@@ -134,6 +141,10 @@ class RastriginObjective(Objective):
         self._minima = np.array([[0]*self._n_dim+[0]])
 
     @property
+    def dims(self) -> int:
+        return self._n_dim
+
+    @property
     def search_bounds(self):
         return self._search_bounds
 
@@ -171,6 +182,10 @@ class GenericObjective(Objective):
 
         # Compute all minima given the minima arguments and the evaluation function
         self._minima = np.array([np.concatenate([arg, [fn(arg)]]) for arg in minima])
+
+    @property
+    def dims(self) -> int:
+        return self._n_dim
 
     @property
     def search_bounds(self):
