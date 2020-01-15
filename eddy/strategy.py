@@ -1,12 +1,15 @@
 import numpy as np
 
+from eddy.objective import Objective
+
 
 class Search(object):
-    def __init__(self, objective, strategy, soft_evaluation_limit=1000, hard_evaluation_limit=1100):
+    def __init__(self, objective : Objective, strategy, soft_evaluation_limit=1000, hard_evaluation_limit=1100, bounded_search=True):
         self._objective = objective
         self._strategy = strategy
         self._soft_evaluation_limit = soft_evaluation_limit
         self._hard_evaluation_limit = hard_evaluation_limit
+        self._bounded_search = True if bounded_search else False
 
     def run(self):
         self._num_evaluations = 0
@@ -17,6 +20,10 @@ class Search(object):
         def eval_objective(x):
             if self._num_evaluations >= self._hard_evaluation_limit:
                 raise StopIteration()
+
+            # For bounded searches, check if the vector is within the allowed search bounds
+            if self._bounded_search and (not np.all(x >= self._objective.search_bounds[:,0]) or not np.all(x <= self._objective.search_bounds[:,1])):
+                raise ValueError('Trying to evaluate x=%s which is out of bounds %s' % (x, self._objective.search_bounds))
 
             self._search_path.append(x)
             self._num_evaluations += 1

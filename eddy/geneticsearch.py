@@ -3,65 +3,79 @@ import itertools
 from .strategy import Strategy
 
 
-def encode(p1, p2, pspace):
-    p1 = min(max(0, p1), 2**pspace-1)
-    p2 = min(max(0, p2), 2**pspace-1)
-    return (p1 << pspace) + p2
 
-
-def decode(x, pspace):
-    return x >> pspace, x - ((x >> pspace) << pspace)
-
-
-def get_shifted_interval(v1, v2):
-    dist_v = abs(v1 - v2)
-    min_v = min(v1, v2)
-    max_v = max(v1, v2)
-    if v1 > v2:
-        min_v += dist_v
-    else:
-        max_v -= dist_v
-    return min_v, max_v
-
-
-def crossover(x1, y1, x2, y2, pspace):
-    # Assume that f(x1) < f(x2), otherwise swap
-    if y1 > y2:
-        tmp = x1
-        x1 = x2
-        x2 = tmp
-
-    a1, b1 = decode(x1, pspace)
-    a2, b2 = decode(x2, pspace)
-
-    a_low, a_high = get_shifted_interval(a1, a2)
-    b_low, b_high = get_shifted_interval(a1, a2)
-
-    return encode(np.random.randint(a_low, a_high+1), np.random.randint(b_low, b_high+1), pspace=pspace)
-
-
-def phenotypical_mapping(gene_bits, pspace, map_lower=-5.0, map_upper=5.0):
-    map_range = abs(map_lower-map_upper)
-    bit_cover_area = 2**pspace
-    discrete_steps = map_range/bit_cover_area
-    a, b = decode(gene_bits, pspace=pspace)
-    x0_lower = map_lower + discrete_steps * a
-    x1_lower = map_lower + discrete_steps * b
-    return np.array([np.random.uniform(x0_lower, x0_lower+discrete_steps), np.random.uniform(x1_lower, x1_lower+discrete_steps)])
-
-
-class GeneticGridSearch(Strategy):
-    def __init__(self, dimensions : int, lower : float, upper : float, population_size=10, num_generations=10, binary_space=5):
+class GeneticSearch(Strategy):
+    def __init__(self, dimensions: int, lower: np.ndarray, upper: np.ndarray, population_size=10, num_generations=10):
         self._dimensions = dimensions
+        assert len(lower.shape) == 1
+        assert lower.shape[0] == dimensions
+        assert len(upper.shape) == 1
+        assert upper.shape[0] == dimensions
+
         self._lower = lower
         self._upper = upper
         self._population_size = population_size
         self._num_generations = num_generations
-        self._binary_space = binary_space
         self._num_select_and_crossover = np.ceil(population_size/10)
-        self._mutation_max = np.ceil((2 ** (2 * binary_space)) / 10)
 
         self._objective = None
+
+    def encode(self, x):
+        """
+        Given a g-dimensional input x (the alleles) returns its genetic representation.
+        The single parameters (alleles) could be restricted to certain ranges.
+        The dimension g is the number of alleles.
+        The genetic representation must be hashable.
+
+        :param x:
+        :return: The gene code object on which crossover and mutation can be applied.
+        """
+        raise NotImplementedError()
+
+    def decode(self, gene):
+        """
+        Transforms the genetic representation into a d-dimensional parameter which can be used to perform a phenotypical mapping.
+        The g-dimensional output contains the alleles of the gene.
+        The dimension g is the number of alleles.
+
+        :param gene:
+        :return:
+        """
+        raise NotImplementedError()
+
+    def phenotypical_mapping(self, gene):
+        """
+        Maps a genetic representation (mostly non-linearly) to a d-dimensional input vector for the objective f: R^d -> R^1
+
+        :param gene:
+        :return:
+        """
+        raise NotImplementedError()
+
+    @property
+    def available_operations(self) -> set:
+        raise NotImplementedError()
+
+    def crossover(self, gene1, gene2):
+        raise NotImplementedError()
+
+    def mutate(self, gene):
+        raise NotImplementedError()
+
+    def sample_gene(self):
+        raise NotImplementedError()
+
+    def _eval_gene(self, gene):
+        if self._objective is None:
+            raise ValueError('Objective is none. Have you forgot to call start()?')
+
+        if gene in self._evaluated_genes:
+            return self._evaluated_genes[gene]
+
+        phenotype = self.phenotypical_mapping(gene)
+        eval = self._objective(phenotype)
+        self._evaluated_genes[gene] = eval
+        return eval
 
     def has_finished(self) -> bool:
         return self._current_generation > self._num_generations
@@ -69,27 +83,15 @@ class GeneticGridSearch(Strategy):
     def start(self, objective):
         self._objective = objective
         self._current_generation = 0
-        self._population = {np.random.randint(0, 2 ** (2 * self._binary_space)) for _ in range(self._population_size)}
+        self._population = {self.sample_gene() for _ in range(self._population_size)}
         self._evaluated_genes = {}
-
-    def _get_gene_eval(self, gene):
-        if self._objective is None:
-            raise ValueError('Objective is none. Have you forgot to call start()?')
-
-        if gene in self._evaluated_genes:
-            return self._evaluated_genes[gene]
-
-        phenotype = phenotypical_mapping(gene, self._binary_space, self._lower, self._upper)
-        eval = self._objective(phenotype)
-        self._evaluated_genes[gene] = eval
-        return eval
 
     def step(self):
         if self._objective is None:
             raise ValueError('Objective is none. Have you forgot to call start()?')
 
         self._current_generation += 1
-        population_eval = {mem: self._get_gene_eval(mem) for mem in self._population}
+        population_eval = {member: self._eval_gene(member) for member in self._population}
 
         # Sorted population by evaluation. Largest/worst member first
         sorted_population = sorted(population_eval, key=lambda x: population_eval[x], reverse=True)
@@ -100,22 +102,94 @@ class GeneticGridSearch(Strategy):
             self._population.remove(sorted_population[idx])
 
         # Crossover smallest members k yielding new k**2 member
-        for p1, p2 in itertools.product(sorted_population[-k:], sorted_population[-k:]):
-            cross_gene = crossover(p1, population_eval[p1], p2, population_eval[p2], pspace=self._binary_space)
+        for p1, p2 in itertools.combinations(sorted_population[-k:], 2):
+            cross_gene = self.crossover(p1, p2)
             self._population.add(cross_gene)
 
         while len(self._population) < self._population_size:
             operation = np.random.choice(['random', 'mutate'])
             if operation is 'random':
-                random_gene = np.random.randint(0, 2 ** (2 * self._binary_space))
-                self._population.add(random_gene)
+                new_random_member = self.sample_gene()
+                if new_random_member is None:
+                    raise ValueError('sample_gene() returned None but should return a randomly sampled gene for the population')
+                self._population.add(self.sample_gene())
             else:
                 member = np.random.choice(list(self._population))
-                member += np.random.randint(-self._mutation_max, self._mutation_max)
-                self._population.add(member)
+                new_member = self.mutate(member)
+                if new_member is None:
+                    raise ValueError('mutate(member) returned None but should return a randomly sampled gene for the population')
+                self._population.add(new_member)
 
     def end(self):
         pass
+
+
+class GeneticGridSearch(GeneticSearch):
+    def __init__(self, dimensions: int, lower: np.ndarray, upper: np.ndarray, population_size=10, num_generations=10,
+                 binary_space=5):
+        super().__init__(dimensions, lower, upper, population_size, num_generations)
+
+        self._binary_space = binary_space
+        self._mutation_max = np.ceil((2 ** (2 * binary_space)) / 10)
+
+        # We encode as many alleles as we have dimensions
+        self._num_alleles = dimensions
+        self._allele_codes = np.array([2**(i*binary_space)-1-(2**((i-1)*binary_space)-1) for i in range(1, self._num_alleles + 1)])
+
+        self._objective = None
+
+    def _restrict(self, allele):
+        return min(max(0, allele), 2**self._binary_space-1)
+
+    def encode(self, x):
+        assert len(x) == self._num_alleles
+        return sum(self._restrict(alelle)*(2**(pos*self._binary_space)) for pos, alelle in enumerate(x))
+
+    def decode(self, gene):
+        return np.array([(gene & code) >> (pos * self._binary_space) for pos, code in enumerate(self._allele_codes)])
+
+    def phenotypical_mapping(self, gene):
+        range_for_each_dimension = np.abs(np.subtract(self._lower, self._upper))
+        bit_cover_area = 2**self._binary_space
+        discrete_steps_per_dimension = range_for_each_dimension/bit_cover_area
+        alleles = self.decode(gene)  # Each allele represents one covered block for the corresponding dimension
+        lower_area = self._lower + discrete_steps_per_dimension * alleles
+        upper_area = lower_area + discrete_steps_per_dimension
+        return np.random.uniform(lower_area, upper_area)
+
+    @property
+    def available_operations(self) -> set:
+        pass
+
+    def _shifted_interval(self, v1: float, v2: float) -> (float, float):
+        dist_v = abs(v1 - v2)
+        min_v = min(v1, v2)
+        max_v = max(v1, v2)
+        if v1 > v2:
+            min_v += dist_v
+        else:
+            max_v -= dist_v
+        return min_v, max_v + 1
+
+    def crossover(self, gene1, gene2):
+        # Assume that f(x1) < f(x2), otherwise swap
+        if self._eval_gene(gene1) > self._eval_gene(gene2):
+            tmp = gene1
+            gene1 = gene2
+            gene2 = tmp
+
+        alleles1 = self.decode(gene1)
+        alleles2 = self.decode(gene2)
+
+        return self.encode(np.array([np.random.randint(*self._shifted_interval(x1, x2)) for x1, x2 in zip(alleles1, alleles2)]))
+
+    def mutate(self, gene):
+        gene_alleles = self.decode(gene)
+        gene_alleles += np.random.randint([-self._mutation_max]*len(gene_alleles), [self._mutation_max]*len(gene_alleles))
+        return self.encode(gene_alleles)
+
+    def sample_gene(self):
+        return np.random.randint(0, 2 ** (2 * self._binary_space))
 
 
 class GeneticRingSearch(Strategy):
@@ -152,9 +226,10 @@ class GeneticRingSearch(Strategy):
         self._evaluated_genes = {}
 
     def _random_gene(self):
+        # Sample between lower and upper for each dimension and one additional radius value between _min_radius and _max_radius
         return np.random.uniform(
-            [self._lower] * self._dimensions + [self._min_radius],
-            [self._upper] * self._dimensions + [self._max_radius]
+            np.append(self._lower, self._min_radius),
+            np.append(self._upper, self._max_radius)
         ).tostring()
 
     def _phenotypical_mapping(self, gene):
@@ -171,7 +246,9 @@ class GeneticRingSearch(Strategy):
         norm = np.sqrt((normal_deviates ** 2).sum(axis=0))
         points = center_point + ((radius * normal_deviates) / norm)
 
-        return points[0]
+        # Restrict the sampled point on the hypersphere with boundaries defined for each dimension
+        # as the search might not exceed those ranges
+        return np.minimum(np.maximum(points[0], self._lower), self._upper)
 
     def _crossover(self, gene1, y1, gene2, y2):
         gene1_array = np.fromstring(gene1)
