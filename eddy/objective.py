@@ -16,6 +16,7 @@ class Objective(object):
     _track_history = False
     _history_args = []
     _visualize_normalizer = matplotlib.colors.NoNorm()
+    _visualize_z_shift = 0
 
     @property
     def dims(self) -> int:
@@ -65,10 +66,18 @@ class Objective(object):
         return self._visualize_normalizer
 
     @property
+    def visualization_z_shift(self):
+        return self._visualize_z_shift
+
+    @visualization_z_shift.setter
+    def visualization_z_shift(self, val):
+        self._visualize_z_shift = val
+
+    @property
     def visualization_bounds(self):
         """
         Returns the recommended lower and upper bound for each dimension, thus an array shaped (d, 2).
-        If the objective is only available in a 2d space it returns an array shaped (2,2).
+        If the objective is only available in a 2d space it returns an array shaped (2, 2).
 
         :rtype: np.ndarray
         :return:
@@ -97,7 +106,7 @@ class Objective(object):
         """
         raise NotImplementedError()
 
-    def _eval(self, x):
+    def _tracked_evaluation(self, x):
         value = self._call(x)
 
         self._num_evaluations += 1
@@ -110,7 +119,7 @@ class Objective(object):
 
         return value
 
-    def __call__(self, x):
+    def _checked_call(self, x, callback):
         if not isinstance(x, np.ndarray):
             x = np.array(x)
 
@@ -118,11 +127,37 @@ class Objective(object):
             x = np.array([x])
 
         if x.ndim == 1:
-            return self._eval(x)
+            return callback(x)
         elif x.ndim is 2:
-            return np.array([self._eval(x1d) for x1d in x])
+            return np.array([callback(x1d) for x1d in x])
         else:
             raise ValueError('Too many number of dimensions given to objective function "%s"' % self)
+
+    def evaluate_visual(self, x, z_shift=None):
+        """
+        Evaluation function without tracking which can be used for a common call for visualization purposes in which a
+        z-shift (output value) is needed to visualize it properly.
+
+        :param x: The usual parameter; same as in __call__(self, x)
+        :param z_shift: Optional value to perform a local z-shift instead of one which is defined on the whole objective.
+        :return:
+        """
+        z_correction = self.visualization_z_shift if z_shift is None else z_shift
+        return self._checked_call(x, self._call) + z_correction
+
+    def evaluate_raw(self, x):
+        """
+        Use this function for un-tracked evaluations of this particular objective. For example to generate points for
+        visualizations etc. To actually evaluate the objective with tracking functionality, use objective() (the built-
+        in objective call).
+
+        :param x:
+        :return:
+        """
+        return self._checked_call(x, self._call)
+
+    def __call__(self, x):
+        return self._checked_call(x, self._tracked_evaluation)
 
     def __str__(self):
         raise NotImplementedError('You should give your objective function a (possibly parameterized) name.')

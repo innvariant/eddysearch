@@ -7,28 +7,29 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from eddy.geneticsearch import GeneticGridSearch, GeneticRingSearch
 from eddy.randomsearch import RandomUniformSearch
-from eddy.objective import RastriginObjective, EggholderObjective
+from eddy.objective import RastriginObjective, EggholderObjective, RosenbrockObjective, HimmelblauObjective
 from eddy.strategy import Search
-from eddy.visualization import visualize_objective
+from eddy.visualization import visualize_objective, adjust_lightness
 
 
 def visualize_search_path(ax, search_path, color='red'):
     for idx in np.arange(0, len(search_path)):
-        step_set = search_path[idx]
-        step_set_x = np.array([step_set[0]])
-        step_set_y = np.array([step_set[1]])
-        step_set_z = np.array([objective(step_set)])
         linewidth = idx/len(search_path) + 0.1
         alpha = idx/len(search_path)
-        ax.plot(step_set_x, step_set_y, step_set_z, alpha=alpha, marker='o', linewidth=linewidth, color=color)
+        #color = adjust_lightness('red',  1+round((idx/len(search_path)+0.1)*0.4, 2))
+        for point in search_path[idx]:
+            step_set_x = np.array([point[0]])
+            step_set_y = np.array([point[1]])
+            step_set_z = np.array([objective(point)])
+            ax.plot(step_set_x, step_set_y, step_set_z, alpha=alpha, marker='o', linewidth=linewidth, color=color)
 
 
-objective = EggholderObjective()
+objective = RastriginObjective()
 objective_lower = objective.search_bounds[:,0]
 objective_upper = objective.search_bounds[:,1]
 
-num_repetitions = 20
-do_visualize_search_path = False
+num_repetitions = 2
+do_visualize_search_path = True
 visualize_objective_lower = objective.visualization_bounds[:,0]
 visualize_objective_upper = objective.visualization_bounds[:,1]
 visualize_color_normalizer = matplotlib.colors.LogNorm()
@@ -41,7 +42,7 @@ strategy_genetic_ring = GeneticRingSearch(
 )
 strategy_random_uniform = RandomUniformSearch(2, objective_lower, objective_upper)
 
-use_strategy = strategy_genetic_grid
+use_strategy = strategy_genetic_ring
 
 repeated_minimum = []
 repeated_args = []
@@ -54,7 +55,7 @@ for repetition in range(num_repetitions):
     print('Used num evaluations: %s' % rastrign_search._num_evaluations)
     repeated_minimum.append(rastrign_search._minimum_eval)
     repeated_args.append(rastrign_search._minimum_arg)
-    #print(rastrign_search._search_path)
+    print(rastrign_search._search_path)
 
     if do_visualize_search_path:
         ax = visualize_objective(objective, max_points_per_dimension=50)

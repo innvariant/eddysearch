@@ -34,3 +34,6 @@ class RandomUniformSearch(Strategy):
 
     def end(self):
         pass
+
+    def __str__(self):
+        return 'RandomSearch(dim=%s)' % (self._dimensions)

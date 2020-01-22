@@ -123,6 +123,9 @@ class GeneticSearch(Strategy):
     def end(self):
         pass
 
+    def __str__(self):
+        return 'GeneticSearch(dim=%s, pop_size=%s, num_gens=%s)' % (self._dimensions, self._population_size, self._num_generations)
+
 
 class GeneticGridSearch(GeneticSearch):
     def __init__(self, dimensions: int, lower: np.ndarray, upper: np.ndarray, population_size=10, num_generations=10,
@@ -190,6 +193,9 @@ class GeneticGridSearch(GeneticSearch):
 
     def sample_gene(self):
         return np.random.randint(0, 2 ** (2 * self._binary_space))
+
+    def __str__(self):
+        return 'GeneticGridSearch(dim=%s, pop_size=%s, num_gens=%s, bin_space=%s)' % (self._dimensions, self._population_size, self._num_generations, self._binary_space)
 
 
 class GeneticRingSearch(Strategy):
@@ -324,3 +330,6 @@ class GeneticRingSearch(Strategy):
 
     def end(self):
         pass
+
+    def __str__(self):
+        return 'GeneticRingSearch(dim=%s, pop_size=%s, num_gens=%s, min_radius=%s, max_radius=%s)' % (self._dimensions, self._population_size, self._num_generations, self._min_radius, self._max_radius)
