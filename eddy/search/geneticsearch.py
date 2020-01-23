@@ -1,24 +1,14 @@
 import numpy as np
 import itertools
-from .strategy import Strategy
+
+from eddy.search.population import PopulationSearch
+from eddy.strategy import SearchStrategy
 
 
-
-class GeneticSearch(Strategy):
-    def __init__(self, dimensions: int, lower: np.ndarray, upper: np.ndarray, population_size=10, num_generations=10):
-        self._dimensions = dimensions
-        assert len(lower.shape) == 1
-        assert lower.shape[0] == dimensions
-        assert len(upper.shape) == 1
-        assert upper.shape[0] == dimensions
-
-        self._lower = lower
-        self._upper = upper
-        self._population_size = population_size
-        self._num_generations = num_generations
-        self._num_select_and_crossover = np.ceil(population_size/10)
-
-        self._objective = None
+class GeneticSearch(PopulationSearch):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._num_select_and_crossover = np.ceil(self.population_size/10)
 
     def encode(self, x):
         """
@@ -80,8 +70,8 @@ class GeneticSearch(Strategy):
     def has_finished(self) -> bool:
         return self._current_generation > self._num_generations
 
-    def start(self, objective):
-        self._objective = objective
+    def start(self, *args, **kwargs):
+        super().start(*args, **kwargs)
         self._current_generation = 0
         self._population = {self.sample_gene() for _ in range(self._population_size)}
         self._evaluated_genes = {}
@@ -128,18 +118,15 @@ class GeneticSearch(Strategy):
 
 
 class GeneticGridSearch(GeneticSearch):
-    def __init__(self, dimensions: int, lower: np.ndarray, upper: np.ndarray, population_size=10, num_generations=10,
-                 binary_space=5):
-        super().__init__(dimensions, lower, upper, population_size, num_generations)
+    def __init__(self, binary_space=5, **kwargs):
+        super().__init__(**kwargs)
 
         self._binary_space = binary_space
         self._mutation_max = np.ceil((2 ** (2 * binary_space)) / 10)
 
         # We encode as many alleles as we have dimensions
-        self._num_alleles = dimensions
+        self._num_alleles = self.num_dimensions
         self._allele_codes = np.array([2**(i*binary_space)-1-(2**((i-1)*binary_space)-1) for i in range(1, self._num_alleles + 1)])
-
-        self._objective = None
 
     def _restrict(self, allele):
         return min(max(0, allele), 2**self._binary_space-1)
@@ -198,38 +185,19 @@ class GeneticGridSearch(GeneticSearch):
         return 'GeneticGridSearch(dim=%s, pop_size=%s, num_gens=%s, bin_space=%s)' % (self._dimensions, self._population_size, self._num_generations, self._binary_space)
 
 
-class GeneticRingSearch(Strategy):
-    def __init__(self,
-                 dimensions : int,
-                 lower : float,
-                 upper : float,
-                 population_size=10,
-                 num_generations=10,
-                 min_radius=0.1,
-                 max_radius=3.0,
-                 mutation_max_pos=0.5,
-                 mutation_max_radius=0.5):
-        self._dimensions = dimensions
-        self._lower = lower
-        self._upper = upper
-        self._population_size = population_size
-        self._num_generations = num_generations
+class GeneticRingSearch(GeneticSearch):
+    def __init__(self, min_radius=0.1, max_radius=3.0, mutation_max_pos=0.5, mutation_max_radius=0.5, **kwargs):
+        super().__init__(**kwargs)
         self._min_radius = min_radius
         self._max_radius = max_radius
         self._mutation_max_pos = mutation_max_pos
         self._mutation_max_radius = mutation_max_radius
 
-        self._num_select_and_crossover = np.ceil(population_size/5)
-
     def has_finished(self) -> bool:
         return self._current_generation > self._num_generations
 
-    def start(self, objective):
-        self._objective = objective
-        self._current_generation = 0
-        # Each gene is a tuple of coordinates and the radius, so it has dimensions+1 elements drawn from a uniform distribution
-        self._population = {self._random_gene() for _ in range(self._population_size)}
-        self._evaluated_genes = {}
+    def sample_gene(self):
+        return self._random_gene()
 
     def _random_gene(self):
         # Sample between lower and upper for each dimension and one additional radius value between _min_radius and _max_radius
@@ -281,19 +249,19 @@ class GeneticRingSearch(Strategy):
         return np.concatenate([mid_point, mid_radius]).tostring()
 
     def _get_gene_eval(self, gene):
-        if self._objective is None:
+        if self.objective is None:
             raise ValueError('Objective is none. Have you forgot to call start()?')
 
         if gene in self._evaluated_genes:
             return self._evaluated_genes[gene]
 
         phenotype = self._phenotypical_mapping(gene)
-        eval = self._objective(phenotype)
+        eval = self.objective(phenotype)
         self._evaluated_genes[gene] = eval
         return eval
 
     def step(self):
-        if self._objective is None:
+        if self.objective is None:
             raise ValueError('Objective is none. Have you forgot to call start()?')
 
         self._current_generation += 1

@@ -192,7 +192,7 @@ class RastriginObjective(Objective):
         return self._minima
 
     def _call(self, x: np.ndarray, *args, **kwargs):
-        assert x.shape[0] is self._n_dim, 'Rastrigin was defined with dim=%s but was called with shape %s' % (self._n_dim, x.shape)
+        assert x.shape[0] == self._n_dim, 'Rastrigin was defined with dim=%s but was called with shape %s' % (self._n_dim, x.shape)
         n = self._n_dim
         return self._A * n + sum(x[d] ** 2 - self._A * np.cos(2 * np.pi * x[d]) for d in range(n))
 

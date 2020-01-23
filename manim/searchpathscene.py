@@ -1,8 +1,7 @@
 from manimlib.imports import *
-from math import cos, sin, pi
-from eddy.geneticsearch import GeneticGridSearch, GeneticRingSearch
-from eddy.objective import RastriginObjective, EggholderObjective, RosenbrockObjective, HimmelblauObjective
-from eddy.strategy import Search
+from eddy.search.geneticsearch import GeneticRingSearch
+from eddy.objective import EggholderObjective
+from eddy.strategy import SearchRunner
 
 class ObjectiveSurface(ParametricSurface):
 
@@ -30,11 +29,11 @@ class ObjectiveSurface(ParametricSurface):
 class Shapes(ThreeDScene):
     def construct(self):
         # Define the original artificial landscape as an objective which we can evaluate
-        objective = RastriginObjective()
+        objective = EggholderObjective()
         objective_lower = objective.search_bounds[:, 0]
         objective_upper = objective.search_bounds[:, 1]
-        #objective.visualization_z_shift = -400
-        objective.visualization_z_shift = -200
+        objective.visualization_z_shift = -100
+        #objective.visualization_z_shift = -200
 
         strategy_genetic_ring = GeneticRingSearch(
             dimensions=2, lower=objective_lower, upper=objective_upper, population_size=20, num_generations=20,
@@ -49,7 +48,7 @@ class Shapes(ThreeDScene):
         second_line.next_to(first_line, DOWN)
         final_line = TextMobject("Thanks for watching.", color=BLUE)
 
-        search = Search(objective, use_strategy, soft_evaluation_limit=200)
+        search = SearchRunner(objective, use_strategy, soft_evaluation_limit=200)
         search.run()
         search_path = search._search_path
 
