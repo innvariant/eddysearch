@@ -5,8 +5,9 @@ import numpy as np
 
 from eddy.search.geneticsearch import GeneticGridSearch, GeneticRingSearch
 from eddy.search.gradient import SGDSearch, MomentumSGDSearch, NesterovMomentumSGDSearch, AdamSGDSearch
+from eddy.search.population import CMAESSearch
 from eddy.search.randomsearch import RandomUniformSearch
-from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13Objective, HimmelblauObjective, EggholderObjective
+from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13Objective, HimmelblauObjective, EggholderObjective, CrossInTrayObjective
 from eddy.strategy import SearchRunner
 from eddy.visualization import visualize_objective
 
@@ -29,8 +30,8 @@ objective = EggholderObjective()
 objective_lower = objective.search_bounds[:,0]
 objective_upper = objective.search_bounds[:,1]
 
-num_repetitions = 100
-do_visualize_search_path = False
+num_repetitions = 2
+do_visualize_search_path = True
 visualize_objective_lower = objective.visualization_bounds[:,0]
 visualize_objective_upper = objective.visualization_bounds[:,1]
 visualize_color_normalizer = matplotlib.colors.LogNorm()
@@ -76,15 +77,20 @@ strategy_adamsgd = AdamSGDSearch(
     upper=objective_upper,
     learning_rate=gradient_learning_rate
 )
+strategy_cmaes = CMAESSearch(
+    dimensions=2,
+    lower=objective_lower,
+    upper=objective_upper
+)
 
 
-use_strategy = strategy_sgd
+use_strategy = strategy_cmaes
 
 repeated_minimum = []
 repeated_args = []
 for repetition in range(num_repetitions):
     print('Use strategy: %s' % str(use_strategy))
-    rastrign_search = SearchRunner(objective, use_strategy, soft_evaluation_limit=500)
+    rastrign_search = SearchRunner(objective, use_strategy, soft_evaluation_limit=200)
     rastrign_search.run()
 
     print('Found minimum argument: f(%s) = %s' % (rastrign_search._minimum_arg, rastrign_search._minimum_eval))
@@ -94,7 +100,7 @@ for repetition in range(num_repetitions):
     #print(rastrign_search._search_path[:10])
 
     if do_visualize_search_path:
-        ax = visualize_objective(objective, max_points_per_dimension=50)
+        ax = visualize_objective(objective, max_points_per_dimension=50, colormap_name='jet')
         visualize_search_path(ax, rastrign_search._search_path)
         plt.show()
 

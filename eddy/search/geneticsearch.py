@@ -2,7 +2,6 @@ import numpy as np
 import itertools
 
 from eddy.search.population import PopulationSearch
-from eddy.strategy import SearchStrategy
 
 
 class GeneticSearch(PopulationSearch):

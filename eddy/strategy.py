@@ -9,7 +9,7 @@ class SearchRunner(object):
         self._strategy = strategy
         self._soft_evaluation_limit = soft_evaluation_limit
         self._hard_evaluation_limit = hard_evaluation_limit
-        self._soft_bounded_search = True if bounded_search else False
+        self._soft_bounded_search = True if soft_bounded_search else False
         self._bounded_search = True if bounded_search else False
 
     def run(self):

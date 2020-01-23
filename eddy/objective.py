@@ -384,7 +384,7 @@ CrossInTrayObjective = lambda: GenericObjective(
     np.array([[-5, 5], [-5, 5]]),
     minima=np.array([[1.3491, -1.34941], [1.34941, 1.34941], [-1.34941, 1.34941], [-1.34941, -1.34941]]),
     n_dim=2,
-    color_normalizer=matplotlib.colors.LogNorm()
+    color_normalizer=matplotlib.colors.NoNorm()
 )
 
 

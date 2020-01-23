@@ -6,6 +6,8 @@ from .objective import Objective
 
 
 def visualize_objective(objective: Objective, ax=None, colormap_name='twilight_shifted', max_points_per_dimension=30):
+    assert objective.dims == 2
+
     vis_bounds = objective.visualization_bounds
 
     spaces = [np.arange(bound[0], bound[1], abs(bound[1]-bound[0])/max_points_per_dimension) for bound in vis_bounds]
