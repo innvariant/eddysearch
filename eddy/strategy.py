@@ -63,6 +63,9 @@ class SearchStrategy(object):
         self._upper = upper
         self._objective = None
 
+    def sample_random(self):
+        raise NotImplementedError('If your methods contains a random-sampling method, provide it here (only used for some algorithms).')
+
     @property
     def num_dimensions(self) -> int:
         return self._dimensions

@@ -5,7 +5,7 @@ import numpy as np
 
 from eddy.search.geneticsearch import GeneticGridSearch, GeneticRingSearch
 from eddy.search.gradient import SGDSearch, MomentumSGDSearch, NesterovMomentumSGDSearch, AdamSGDSearch
-from eddy.search.population import CMAESSearch
+from eddy.search.population import CMAESSearch, RandomEvolutionarySearch
 from eddy.search.randomsearch import RandomUniformSearch
 from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13Objective, HimmelblauObjective, EggholderObjective, CrossInTrayObjective
 from eddy.strategy import SearchRunner
@@ -82,9 +82,14 @@ strategy_cmaes = CMAESSearch(
     lower=objective_lower,
     upper=objective_upper
 )
+strategy_randomevolutionary = RandomEvolutionarySearch(
+    dimensions=2,
+    lower=objective_lower,
+    upper=objective_upper
+)
 
 
-use_strategy = strategy_cmaes
+use_strategy = strategy_randomevolutionary
 
 repeated_minimum = []
 repeated_args = []
