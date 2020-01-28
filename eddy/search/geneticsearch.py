@@ -5,6 +5,7 @@ from eddy.search.population import PopulationSearch
 
 
 class GeneticSearch(PopulationSearch):
+    # TODO: adapt to new interface with PopulationSearch
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._num_select_and_crossover = np.ceil(self.population_size/10)
@@ -177,6 +178,9 @@ class GeneticGridSearch(GeneticSearch):
         gene_alleles += np.random.randint([-self._mutation_max]*len(gene_alleles), [self._mutation_max]*len(gene_alleles))
         return self.encode(gene_alleles)
 
+    def sample_random(self):
+        return self.decode(self.sample_gene())
+
     def sample_gene(self):
         return np.random.randint(0, 2 ** (2 * self._binary_space))
 
@@ -196,14 +200,14 @@ class GeneticRingSearch(GeneticSearch):
         return self._current_generation > self._num_generations
 
     def sample_gene(self):
-        return self._random_gene()
+        return self._encode_member(self.sample_random())
 
-    def _random_gene(self):
+    def sample_random(self):
         # Sample between lower and upper for each dimension and one additional radius value between _min_radius and _max_radius
         return np.random.uniform(
             np.append(self._lower, self._min_radius),
             np.append(self._upper, self._max_radius)
-        ).tostring()
+        )
 
     def _phenotypical_mapping(self, gene):
         gene_array = np.fromstring(gene)
@@ -283,7 +287,7 @@ class GeneticRingSearch(GeneticSearch):
         while len(self._population) < self._population_size:
             operation = np.random.choice(['random', 'mutate'])
             if operation is 'random':
-                self._population.add(self._random_gene())
+                self._population.add(self._encode_member(self.sample_random()))
             else:
                 chosen_member_idx = np.random.randint(0, len(self._population))
                 chosen_member = list(self._population)[chosen_member_idx]

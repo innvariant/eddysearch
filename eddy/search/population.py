@@ -35,7 +35,7 @@ class PopulationSearch(SearchStrategy):
         super().start(objective)
         self._current_generation = 0
         self._evaluated_members = {}
-        self._population = {self.sample_random().tostring() for _ in range(self._population_size)}
+        self._population = {self._encode_member(self.sample_random()) for _ in range(self._population_size)}
 
     def step(self):
         self._current_generation += 1
@@ -46,6 +46,7 @@ class PopulationSearch(SearchStrategy):
         sorted_population = sorted(population_eval, key=lambda x: population_eval[x], reverse=True)
 
         self._population = self.derive_population(sorted_population, population_eval)
+        assert self._population is not None and len(self._population) > 0, 'derive_population() returned None or empty population'
 
     def derive_population(self, sorted_population, evaluated_population):
         raise NotImplementedError('Your population search has to provide a method to derive a new generation (population) set given a sorted population.')
@@ -104,35 +105,47 @@ class RandomEvolutionarySearch(EvolutionarySearch, RandomUniformSearch):
 
 class CMAESSearch(EvolutionarySearch):
     # TODO in progress
-    def __init__(self, *args, mu_important: int = None, **kwargs):
+    def __init__(self, *args, learning_rate: float = 1, mu_important: int = None, **kwargs):
         super().__init__(*args, **kwargs)
+        self._learning_rate = learning_rate  # corresponds to c_m in CMA-ES
         self._mu_important = int(self.population_size/2) if mu_important is None else int(mu_important)
 
     def sample_random(self):
         return np.random.multivariate_normal(self._mean, self._covariance)
 
     def start(self, objective: Objective):
-        super().start(objective)
         self._mean = np.mean([self._lower, self._upper], axis=0)
         self._covariance = np.eye(self.num_dimensions)
+        super().start(objective)
 
     def derive_population(self, sorted_population, evaluated_population):
-        members = np.copy([np.fromstring(mem) for mem in self._population])
-        covariance = np.cov(members.T)
-        print(covariance)
-        population_eval = {mem: self._cached_evaluation(mem) for mem in self._population}
+        # Discard #mu_important members (first x members by sorted population)
+        #print('---'*5)
+        #print('Mean of population: ', np.mean([np.fromstring(mem) for mem in sorted_population], axis=0))
+        member_points = np.array([self._decode_member(mem) for mem in sorted_population[self._mu_important:]])
+        #print(len(member_points))
+        #print('Mean after selection: ', np.mean(member_points, axis=0))
 
-        # Sorted population by evaluation. Largest/worst member first
-        sorted_population = sorted(population_eval, key=lambda x: population_eval[x], reverse=True)
-
-        for idx in range(self._mu_important):
-            self._population.remove(sorted_population[idx])
+        # Move covariance to better solution
+        # Use the mean of previous generation
+        covariance = np.copy(self._covariance)
+        num_members = len(member_points)
+        for i in range(member_points.shape[1]):
+            #E_i = np.mean(member_points[:,i])  # estimated expected value for dimension i
+            E_i = self._mean[i]
+            for j in range(i, member_points.shape[1]):
+                covariance[i, j] = np.sum((member_points[:,i]-E_i)**2)/(num_members-1)
+                covariance[j, i] = covariance[i, j]
+        self._covariance = np.cov(member_points.T)
 
         # Move mean to better solutions
-        self._mean = np.mean([np.fromstring(mem) for mem in self._population], axis=0)
+        #print('Stored distribution mean: ', self._mean)
+        self._mean = self._mean + self._learning_rate * (np.mean(member_points, axis=0)-self._mean)
 
-        for _ in range(self._mu_important):
-            self._population.add(self._sample_random().tostring())
+        new_members = np.array([self.sample_random() for _ in range(self._mu_important)])
+        member_points = np.concatenate([member_points, new_members])
+
+        return {self._encode_member(mem) for mem in member_points}
 
     def end(self):
         pass
@@ -142,3 +155,94 @@ class CMAESSearch(EvolutionarySearch):
 
     def __str__(self):
         return 'CMAESSearch(dim=%s, pop_size=%s)' % (self._dimensions, self._population_size)
+
+
+class SpeciesCMAESSearch(PopulationSearch):
+    def __init__(self, *args, learning_rate: float = 1, mu_important: int = None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._learning_rate = learning_rate  # corresponds to c_m in CMA-ES
+        self._mu_important = int(self.population_size/2) if mu_important is None else int(mu_important)
+
+    def sample_random(self, species=0):
+        return np.random.multivariate_normal(self._means[species], self._covariances[species])
+
+    def start(self, objective: Objective):
+        self._objective = objective
+        self._current_generation = 0
+        self._evaluated_members = {}
+        self._means = np.array([np.mean([self._lower, self._upper], axis=0)])
+        self._covariances = np.array([np.eye(self.num_dimensions)])
+        self._mean_histories = [[np.mean([self._lower, self._upper], axis=0)]]
+        self._covariance_histories = [[np.eye(self.num_dimensions)]]
+        self._populations = [{self._encode_member(self.sample_random()) for _ in range(self._population_size)}]
+        #force_start = [np.array([ 0.767164  , -0.76002355]), np.array([0.3757698 , 1.15696329]), np.array([ 0.53418772, -0.69829167]), np.array([-0.90615645,  0.35733911]), np.array([-0.95456183, -0.25032612]), np.array([-1.86690963, -0.26622719]), np.array([1.59126521, 1.24442322]), np.array([1.47703175, 0.51871846]), np.array([-0.87818858, -0.79254416]), np.array([-2.00827781, -1.84839004]), np.array([ 1.88570074, -0.80706232]), np.array([0.10968603, 0.416345  ]), np.array([-0.15412068, -0.3120081 ]), np.array([-0.18308967, -1.61745235]), np.array([-0.52871902,  1.0097951 ]), np.array([-0.85989092, -0.82414516]), np.array([-0.26492876, -0.11489943]), np.array([-1.041764  , -0.58269327]), np.array([-1.60976258, -0.62300809]), np.array([-1.01895488,  0.17777552])]
+        #self._populations = [{self._encode_member(mem) for mem in force_start}]
+        #print('Start')
+        #print([self._decode_member(mem) for mem in self._populations[0]])
+
+
+    def step(self):
+        self._current_generation += 1
+
+        print('-'*10)
+        print('Generation', self._current_generation)
+
+        for species, population in enumerate(self._populations):
+            print('-- Species', species)
+            population_eval = {mem: self._cached_evaluation(mem) for mem in population}
+
+            # Sorted population by evaluation. Largest/worst member first
+            sorted_population = sorted(population_eval, key=lambda x: population_eval[x], reverse=True)
+
+            member_points = np.array([self._decode_member(mem) for mem in sorted_population[self._mu_important:]])
+
+            covariance = np.copy(self._covariances[species])
+            num_members = len(member_points)
+            for i in range(member_points.shape[1]):
+                #E_i = np.mean(member_points[:,i])  # estimated expected value for dimension i
+                E_i = self._means[species][i]
+                for j in range(i, member_points.shape[1]):
+                    covariance[i, j] = np.sum((member_points[:,i]-E_i)**2)/(num_members-1)
+                    covariance[j, i] = covariance[i, j]
+            self._covariances[species] = np.cov(member_points.T)
+            self._covariance_histories[species].append(np.copy(self._covariances[species]))
+
+            self._means[species] = self._means[species] + self._learning_rate * (np.mean(member_points, axis=0)-self._means[species])
+            self._mean_histories[species].append(np.copy(self._means[species]))
+
+            print('Covariance & mean:')
+            print(self._covariances[species])
+            print('\t\t\t\t', self._means[species])
+            print('Expansion?')
+            #for d in range(self.num_dimensions):
+            avg_covariance = np.mean(self._covariance_histories[species][-5:], axis=0)
+            cur_dimension_variance = np.mean(np.diag(self._covariances[species]))
+            avg_dimension_variance = np.mean(np.diag(avg_covariance))
+            print('Cur variance over dimensions:', cur_dimension_variance)
+            print('Avg variance over dimensions:', avg_dimension_variance)
+            print('Averaged historical covariance:')
+            print(np.mean(self._covariance_histories[species][-5:], axis=0))
+            for d in range(self.num_dimensions):
+                if self._covariances[species][d,d] > self._covariance_histories[species][-2][d,d]:
+                    print('Dimension %s variance is greater than its last variance' % d)
+                if self._covariances[species][d,d]/np.mean(avg_covariance[d,d]) > 1:
+                    print('Dimension %s is greater than its historical average variance' % d)
+                if self._covariances[species][d,d]/avg_dimension_variance > 1:
+                    print('Dimension %s is greater than total historical average variance' % d)
+                if self._covariances[species][d,d]/cur_dimension_variance > 1:
+                    print('Dimension %s is greater than current average variance' % d)
+
+            new_members = np.array([self.sample_random(species) for _ in range(self._mu_important)])
+            member_points = np.concatenate([member_points, new_members])
+
+            self._populations[species] = {self._encode_member(mem) for mem in member_points}
+
+    def end(self):
+        pass
+
+    def has_finished(self):
+        return False  # never stop
+
+    def __str__(self):
+        return 'SpeciesCMAESSearch(dim=%s, pop_size=%s)' % (self._dimensions, self._population_size)

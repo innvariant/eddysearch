@@ -5,7 +5,7 @@ import numpy as np
 
 from eddy.search.geneticsearch import GeneticGridSearch, GeneticRingSearch
 from eddy.search.gradient import SGDSearch, MomentumSGDSearch, NesterovMomentumSGDSearch, AdamSGDSearch
-from eddy.search.population import CMAESSearch, RandomEvolutionarySearch
+from eddy.search.population import CMAESSearch, RandomEvolutionarySearch, SpeciesCMAESSearch
 from eddy.search.randomsearch import RandomUniformSearch
 from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13Objective, HimmelblauObjective, EggholderObjective, CrossInTrayObjective
 from eddy.strategy import SearchRunner
@@ -26,12 +26,12 @@ def visualize_search_path(ax, search_path, color='red'):
             ax.plot(step_set_x, step_set_y, step_set_z, alpha=alpha, marker='o', linewidth=linewidth, color=color)
 
 
-objective = EggholderObjective()
+objective = GoldsteinPriceObjective()
 objective_lower = objective.search_bounds[:,0]
 objective_upper = objective.search_bounds[:,1]
 
-num_repetitions = 2
-do_visualize_search_path = True
+num_repetitions = 100
+do_visualize_search_path = False
 visualize_objective_lower = objective.visualization_bounds[:,0]
 visualize_objective_upper = objective.visualization_bounds[:,1]
 visualize_color_normalizer = matplotlib.colors.LogNorm()
@@ -46,7 +46,7 @@ strategy_genetic_grid = GeneticGridSearch(
     binary_space=5
 )
 strategy_genetic_ring = GeneticRingSearch(
-    dimensions=2, lower=objective_lower, upper=objective_upper, population_size=20, num_generations=20,
+    dimensions=2, lower=objective_lower, upper=objective_upper, population_size=20, num_generations=80,
     min_radius=3.1, max_radius=10.0
 )
 strategy_random_uniform = RandomUniformSearch(2, objective_lower, objective_upper)
@@ -80,7 +80,14 @@ strategy_adamsgd = AdamSGDSearch(
 strategy_cmaes = CMAESSearch(
     dimensions=2,
     lower=objective_lower,
-    upper=objective_upper
+    upper=objective_upper,
+    population_size=20
+)
+strategy_speciescmaes = SpeciesCMAESSearch(
+    dimensions=2,
+    lower=objective_lower,
+    upper=objective_upper,
+    population_size=20
 )
 strategy_randomevolutionary = RandomEvolutionarySearch(
     dimensions=2,
@@ -89,24 +96,24 @@ strategy_randomevolutionary = RandomEvolutionarySearch(
 )
 
 
-use_strategy = strategy_randomevolutionary
+use_strategy = strategy_genetic_ring
 
 repeated_minimum = []
 repeated_args = []
 for repetition in range(num_repetitions):
     print('Use strategy: %s' % str(use_strategy))
-    rastrign_search = SearchRunner(objective, use_strategy, soft_evaluation_limit=200)
-    rastrign_search.run()
+    search = SearchRunner(objective, use_strategy, soft_evaluation_limit=200)
+    search.run()
 
-    print('Found minimum argument: f(%s) = %s' % (rastrign_search._minimum_arg, rastrign_search._minimum_eval))
-    print('Used num evaluations: %s' % rastrign_search._num_evaluations)
-    repeated_minimum.append(rastrign_search._minimum_eval)
-    repeated_args.append(rastrign_search._minimum_arg)
+    print('Found minimum argument: f(%s) = %s' % (search._minimum_arg, search._minimum_eval))
+    print('Used num evaluations: %s' % search._num_evaluations)
+    repeated_minimum.append(search._minimum_eval)
+    repeated_args.append(search._minimum_arg)
     #print(rastrign_search._search_path[:10])
 
     if do_visualize_search_path:
         ax = visualize_objective(objective, max_points_per_dimension=50, colormap_name='jet')
-        visualize_search_path(ax, rastrign_search._search_path)
+        visualize_search_path(ax, search._search_path)
         plt.show()
 
 print('Repeated Search. List of found minima:')
@@ -114,9 +121,9 @@ print(repeated_minimum)
 print('Average of minima', np.mean(repeated_minimum))
 
 
-ax = sns.boxplot(repeated_minimum)
-ax.set_xlim([-960, -700])
-plt.show()
+#ax = sns.boxplot(repeated_minimum)
+#ax.set_xlim([-960, -700])
+#plt.show()
 
 #errors = [np.minimum([np.abs(found_val, min_val[-1]) for min_val in objective.minima]) for found_val in repeated_minimum]
 errors = [np.min([np.abs(found_val-min_val[-1]) for min_val in objective.minima]) for found_val in repeated_minimum]
@@ -125,5 +132,5 @@ print(errors)
 print('Average of errors', np.mean(errors))
 ax = sns.boxplot(errors)
 ax.set_xlim([0, 300])
-plt.title(str(use_strategy))
+plt.title(str(objective)+'\n'+str(use_strategy))
 plt.show()
