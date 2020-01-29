@@ -1,2 +1,4 @@
 .idea/
 __pycache__/
+eddy.egg-info/
+pip-wheel-metadata/

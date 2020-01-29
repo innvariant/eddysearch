@@ -10,7 +10,7 @@ The main intent is to provide insights into the differences of various search st
 ![CMA-ES Search over Himmelblau objective](res/himmelblau-cmaes.png)
 ![Adam Gradient Descent over Himmelblau objective](res/himmelblau-adam.png)
 ![Random Search over Rastrigin objective](res/rastrigin-random.png)
-
+ 
 # Installation
 - Install from PyPi via poetry: ``poetry install eddy``
 - Install latest development version: ``poetry add git+https://github.com/innvariant/eddy.git#master``

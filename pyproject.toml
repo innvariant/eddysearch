@@ -9,11 +9,13 @@ license = "MIT"
 
 readme = "README.md"
 
-homepage = "https://github.com/innvariant/pyEddy"
-repository = "https://github.com/innvariant/pyEddy"
-documentation = "https://github.com/innvariant/pyEddy"
+homepage = "https://github.com/innvariant/eddy"
+repository = "https://github.com/innvariant/eddy"
+documentation = "https://github.com/innvariant/eddy"
 
-keywords = ["optimization", "inference", "training"]
+keywords = ["optimization", "search strategy", "evolutionary search", "inference", "training"]
+
+exclude = ["res/"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
