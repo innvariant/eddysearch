@@ -98,7 +98,7 @@ strategy_randomevolutionary = RandomEvolutionarySearch(
 )
 
 
-use_strategy = strategy_speciescmaes
+use_strategy = strategy_cmaes
 
 repeated_minimum = []
 repeated_args = []
@@ -120,7 +120,8 @@ for repetition in range(num_repetitions):
 
 print('Repeated Search. List of found minima:')
 print(repeated_minimum)
-print('Average of minima', np.mean(repeated_minimum))
+for agg in [np.mean, np.max, np.min, np.median]:
+    print('%s of minima' % agg.__name__, agg(repeated_minimum))
 
 
 #ax = sns.boxplot(repeated_minimum)
@@ -131,7 +132,8 @@ print('Average of minima', np.mean(repeated_minimum))
 errors = [np.min([np.abs(found_val-min_val[-1]) for min_val in objective.minima]) for found_val in repeated_minimum]
 print('Errors:')
 print(errors)
-print('Average of errors', np.mean(errors))
+for agg in [np.mean, np.max, np.min, np.median]:
+    print('%s of errors' % agg.__name__, agg(errors))
 ax = sns.boxplot(errors)
 ax.set_xlim([0, 300])
 plt.title(str(objective)+'\n'+str(use_strategy))
