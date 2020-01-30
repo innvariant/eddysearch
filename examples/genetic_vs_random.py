@@ -11,8 +11,10 @@ from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13O
 from eddy.strategy import SearchRunner
 from eddy.visualization import visualize_objective
 
+
 def round_partial(value, resolution):
     return round(value / resolution) * resolution
+
 
 def visualize_search_path(ax, search_path, color='red'):
     for idx in np.arange(0, len(search_path)):
@@ -23,10 +25,10 @@ def visualize_search_path(ax, search_path, color='red'):
             step_set_x = np.array([point[0]])
             step_set_y = np.array([point[1]])
             step_set_z = np.array([objective(point)])
-            ax.plot(step_set_x, step_set_y, step_set_z, alpha=alpha, marker='o', linewidth=linewidth, color=color)
+            ax.plot(step_set_x, step_set_y, step_set_z, alpha=alpha, marker='.', linewidth=linewidth, color=color)
 
 
-objective = GoldsteinPriceObjective()
+objective = EggholderObjective()
 objective_lower = objective.search_bounds[:,0]
 objective_upper = objective.search_bounds[:,1]
 
@@ -96,7 +98,7 @@ strategy_randomevolutionary = RandomEvolutionarySearch(
 )
 
 
-use_strategy = strategy_genetic_ring
+use_strategy = strategy_speciescmaes
 
 repeated_minimum = []
 repeated_args = []
