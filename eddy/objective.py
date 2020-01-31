@@ -426,3 +426,29 @@ def _batched(fn, x, *args):
     else:
         raise ValueError('Too many number of dimensions given to objective function "%s"' % fn.__name__)
 
+
+
+def stier2020A1d(z):
+    assert isinstance(z, (np.ndarray, np.generic))
+    assert z.ndim is 1
+
+    x = z[0]
+    y = z[1]
+
+    #return 2*np.abs(x)-x*np.abs(y)
+    #return 2*np.abs(x)-x*np.abs(y)+y
+    #return 2 * x**2 - 2 * x * y**2 + 2 * y
+    #return (x/6)**2+(y/6)**2
+    #return 2 * x ** 2 - 2 * x * y ** 2 + 2 * y + (x/3)**4+(y/3)**4
+    #return (x/3)**6+(y/3)**6
+    #return 1 + 2 * x ** 2 - 2 * x * y ** 2 + 2 * y + (x / 3) ** 6 + (y / 3) ** 6
+    return 1421 + 2 * x ** 2 - 4 * x * y ** 2 + 2 * y + (x / 3) ** 6 + (y / 3) ** 6
+
+
+Stier2020AObjective = lambda ndim=2: GenericObjective(
+    stier2020A1d,
+    np.array([[-12, 12], [-12, 12]]),
+    np.array([[8.30739968, -9.47463221]*ndim]),  # Not analytically proven
+    n_dim=ndim,
+    color_normalizer=matplotlib.colors.LogNorm()
+)
