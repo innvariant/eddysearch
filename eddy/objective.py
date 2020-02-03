@@ -427,7 +427,6 @@ def _batched(fn, x, *args):
         raise ValueError('Too many number of dimensions given to objective function "%s"' % fn.__name__)
 
 
-
 def stier2020A1d(z):
     assert isinstance(z, (np.ndarray, np.generic))
     assert z.ndim is 1
@@ -451,4 +450,48 @@ Stier2020AObjective = lambda ndim=2: GenericObjective(
     np.array([[8.30739968, -9.47463221]*ndim]),  # Not analytically proven
     n_dim=ndim,
     color_normalizer=matplotlib.colors.LogNorm()
+)
+
+
+def stier2020B1d(z):
+    assert isinstance(z, (np.ndarray, np.generic))
+    assert z.ndim is 1
+
+    x = z[0]
+    y = z[1]
+
+    #return np.sin(x)-x*y+(x/4)**4+(y/4)**4
+    #return 2+np.sin(10*x)-np.sin(x)*y+(x/4)**4+(y/4)**4
+    #return 10-np.sin(x)*y+(x/4)**4+(y/4)**4
+    #return 8+2*np.sin(x+2*y)*y+(x/4)**4+(y/4)**4
+    #return 20 + x - 1.5*(y-5) + 2 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
+    return 20 + x - 1.8*(y-5) + 3 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
+
+
+Stier2020BObjective = lambda ndim=2: GenericObjective(
+    stier2020B1d,
+    np.array([[-10, 10], [-10, 10]]),
+    np.array([[0.87902855, 5.05756791]*ndim]),  # Not analytically proven
+    n_dim=ndim,
+    color_normalizer=matplotlib.colors.LogNorm()
+)
+
+
+def bahar1d(z):
+    assert isinstance(z, (np.ndarray, np.generic))
+    assert z.ndim is 1
+
+    x = z[0]
+    y = z[1]
+
+    #return np.maximum(0, x)
+    return np.maximum(0, x)**2 + (x/4)**4+(y/4)**4
+
+
+BaharObjective = lambda ndim=2: GenericObjective(
+    bahar1d,
+    np.array([[-10, 10], [-10, 10]]),
+    np.array([[0.87902855, 5.05756791]*ndim]),  # Not analytically proven
+    n_dim=ndim,
+    color_normalizer=matplotlib.colors.NoNorm()
 )
