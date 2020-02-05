@@ -19,11 +19,13 @@ def visualize_objective(objective: Objective, ax=None, colormap_name='twilight_s
     x, y = grid
 
     xy = grid.reshape(2, -1).T
-    z = objective(xy).reshape(x.shape)
+    z = objective.evaluate_visual(xy).reshape(x.shape)
 
     if ax is None:
         fig = plt.figure()
         ax = fig.gca(projection='3d')
+        ax.set_xlim3d(vis_bounds[0][0], vis_bounds[0][1])
+        ax.set_ylim3d(vis_bounds[1][0], vis_bounds[1][1])
 
     cmap = plt.get_cmap(colormap_name)
     ax.plot_trisurf(
@@ -144,54 +146,19 @@ def old_visualize_path(search_path, objective: Objective = None, space: int=None
                     #axis.scatter(np.concatenate([p1, [objective.evaluate_visual(p1)]]), np.concatenate([p2, [objective.evaluate_visual(p2)]]), marker='>', color=group_color)
 
 
-def visualize_path(search_path, objective: Objective = None, axis=None, path_centroid_aggregate='centroid', group_level: int=1):
-    if hasattr(search_path, 'shape'):
-        print(search_path.shape)
-
-        if len(search_path.shape) > 2:
-            print('a')
-            fn_path_centroid = fn_path_centroid_selectors[path_centroid_aggregate] if path_centroid_aggregate in fn_path_centroid_selectors else path_centroid_aggregate
-            assert fn_path_centroid != None
-
-            # Compute centroids along the second last axis (num_points) and reduce (?,?,g,n,d) to (?,?,g,d)
-            centroids = np.array([fn_path_centroid(g.reshape(-1, g.shape[-1]), objective) for g in search_path.reshape(-1, search_path.shape[-2], search_path.shape[-1])]).reshape(np.delete(search_path.shape, len(search_path.shape) - 2, 0))
-            grouped_centroid_paths = centroids.reshape(-1, centroids.shape[-2], centroids.shape[-1])
-
-            centroids = []
-            covariances = []
-            for group in grouped_centroid_paths:
-                centroid, covariance = visualize_group(search_path, axis, objective=objective)
-                centroids.append(centroid)
-                covariances.append(covariances)
-
-            return np.mean(centroids), None
-
-        else:
-            print('b')
-            return visualize_group(search_path, axis, objective=objective)
-
-    else:
-        # Unpack a list of different-sized groups
-        centroids = []
-        covariances = []
-        for group in search_path:
-            centroid, covariance = visualize_group(group, axis, plot_covariance=True, objective=objective)
-            centroids.append(centroid)
-            covariances.append(covariance)
-        centroids = np.array(centroids)
-        covariances = np.array(covariances)
-
-        """group_color = 'b'
-        for ix in range(centroids.shape[-2] - 1):
-            xs = centroids[ix:ix + 2, 0]
-            ys = centroids[ix:ix + 2, 1]
-            zs = [objective.evaluate_visual([px, py]) for px, py in zip(xs, ys)]
-            axis.plot(xs, ys, zs, ls='--', lw=0.8, color=group_color)"""
-        return visualize_group(centroids, axis, connect_pairwise=True, objective=objective, group_color='b')
-        #return np.mean(centroids, axis=0)
+def visualize_path(search_paths, objective: Objective = None, axis=None):
+    num_species = len(search_paths)
+    colormap = plt.cm.get_cmap('hsv', num_species)
+    for species_idx, species in enumerate(search_paths):
+        group_color = colormap(species_idx)
+        species_centroids = []
+        for gen_id, generation in enumerate(species):
+            gen_centroid, gen_covariance = visualize_group(generation, axis, objective=objective, plot_covariance=True, plot_pointwise='.', group_color=group_color, group_size=0.8)
+            species_centroids.append(gen_centroid)
+        visualize_group(np.array(species_centroids), axis, objective=objective, connect_pairwise=True, plot_pointwise='>', group_color=group_color, group_size=1.2)
 
 
-def visualize_group(group, axis, connect_pairwise=False, plot_covariance=False, objective: Objective = None, group_color='b'):
+def visualize_group(group, axis, connect_pairwise=False, plot_pointwise: str=None, plot_covariance=False, objective: Objective = None, group_color='b', group_size=1.0):
     assert hasattr(group, 'shape')
     assert len(group.shape) == 2
     assert group.shape[1] == 2 or group.shape[1] == 3
@@ -202,6 +169,16 @@ def visualize_group(group, axis, connect_pairwise=False, plot_covariance=False, 
     centroid = np.mean(group, axis=0)
     covariance = np.cov(group.T)
 
+    if plot_pointwise or num_points < 2 * num_dims:
+        marker = plot_pointwise if isinstance(plot_pointwise, str) else '.'
+        xs = group[:, 0]
+        ys = group[:, 1]
+        if num_dims == 2:
+            zs = [objective.evaluate_visual([px, py]) for px, py in zip(xs, ys)]
+        else:
+            zs = group[:, 2]
+        axis.scatter(xs, ys, zs, marker=marker, color=group_color, lw=group_size*0.8)
+
     if connect_pairwise:
         for ix in range(num_points - 1):
             xs = group[ix:ix + 2, 0]
@@ -210,7 +187,7 @@ def visualize_group(group, axis, connect_pairwise=False, plot_covariance=False, 
                 zs = [objective.evaluate_visual([px, py]) for px, py in zip(xs, ys)]
             else:
                 zs = group[ix:ix + 2, 2]
-            axis.plot(xs, ys, zs, ls='--', lw=0.8, color=group_color)
+            axis.plot(xs, ys, zs, ls='--', lw=group_size*0.8, color=group_color)
 
     if plot_covariance and num_points > num_dims * 2:
         n_std = 3.0
@@ -219,7 +196,7 @@ def visualize_group(group, axis, connect_pairwise=False, plot_covariance=False, 
         ell_radius_y = np.sqrt(1 - pearson)
         scale_y = np.sqrt(covariance[1, 1]) * n_std
         scale_x = np.sqrt(covariance[0, 0]) * n_std
-        ellipse = Ellipse(centroid, width=ell_radius_x * scale_x, height=ell_radius_y * scale_y, facecolor=group_color, edgecolor=group_color, ls='--', lw=0.8, alpha=0.1)
+        ellipse = Ellipse(centroid, width=ell_radius_x * scale_x, height=ell_radius_y * scale_y, facecolor=group_color, edgecolor=group_color, ls='--', lw=group_size*0.8, alpha=0.1)
         ellipse_z = objective.evaluate_visual(centroid)
 
         axis.add_patch(ellipse)

@@ -7,16 +7,17 @@ from eddy.search.geneticsearch import GeneticGridSearch, GeneticRingSearch
 from eddy.search.gradient import SGDSearch, MomentumSGDSearch, NesterovMomentumSGDSearch, AdamSGDSearch
 from eddy.search.population import CMAESSearch, RandomEvolutionarySearch, SpeciesCMAESSearch
 from eddy.search.randomsearch import RandomUniformSearch
-from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13Objective, HimmelblauObjective, EggholderObjective, CrossInTrayObjective
+from eddy.objective import RastriginObjective, GoldsteinPriceObjective, LeviN13Objective, HimmelblauObjective, \
+    EggholderObjective, CrossInTrayObjective, Stier2020A1Objective, Stier2020A2Objective
 from eddy.strategy import SearchRunner
-from eddy.visualization import visualize_objective
+from eddy.visualization import visualize_objective, visualize_path
 
 
 def round_partial(value, resolution):
     return round(value / resolution) * resolution
 
 
-def visualize_search_path(ax, search_path, color='red'):
+def visualize_search_path(ax, objective, search_path, color='red'):
     for idx in np.arange(0, len(search_path)):
         linewidth = idx/len(search_path) + 0.1
         alpha = round_partial(idx/len(search_path), 0.1)
@@ -28,12 +29,12 @@ def visualize_search_path(ax, search_path, color='red'):
             ax.plot(step_set_x, step_set_y, step_set_z, alpha=alpha, marker='.', linewidth=linewidth, color=color)
 
 
-objective = EggholderObjective()
+objective = HimmelblauObjective()
 objective_lower = objective.search_bounds[:,0]
 objective_upper = objective.search_bounds[:,1]
 
-num_repetitions = 100
-do_visualize_search_path = False
+num_repetitions = 2
+do_visualize_search_path = True
 visualize_objective_lower = objective.visualization_bounds[:,0]
 visualize_objective_upper = objective.visualization_bounds[:,1]
 visualize_color_normalizer = matplotlib.colors.LogNorm()
@@ -98,7 +99,7 @@ strategy_randomevolutionary = RandomEvolutionarySearch(
 )
 
 
-use_strategy = strategy_cmaes
+use_strategy = strategy_speciescmaes
 
 repeated_minimum = []
 repeated_args = []
@@ -115,7 +116,9 @@ for repetition in range(num_repetitions):
 
     if do_visualize_search_path:
         ax = visualize_objective(objective, max_points_per_dimension=50, colormap_name='jet')
-        visualize_search_path(ax, search._search_path)
+
+        visualize_path(search._search_path, objective, axis=ax)
+        #ax.set_zlim3d(-1, 30000)
         plt.show()
 
 print('Repeated Search. List of found minima:')

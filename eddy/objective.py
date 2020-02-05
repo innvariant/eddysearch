@@ -460,6 +460,7 @@ Stier2020A2Objective = lambda ndim=2: GenericObjective(
     stier2020A2_1d,
     np.array([[-12, 12], [-12, 12]]),
     np.array([[8.31373, -9.48875]*ndim]),  # Not analytically proven
+    visualization_bounds=np.array([[-15, 15], [-15, 15]]),
     n_dim=ndim,
     color_normalizer=matplotlib.colors.LogNorm()
 )

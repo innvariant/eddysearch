@@ -181,7 +181,6 @@ class SpeciesCMAESSearch(PopulationSearch):
         #print('Start')
         #print([self._decode_member(mem) for mem in self._populations[0]])
 
-
     def step(self):
         self._current_generation += 1
 
@@ -190,6 +189,7 @@ class SpeciesCMAESSearch(PopulationSearch):
 
         for species, population in enumerate(self._populations):
             print('-- Species', species)
+            self.current_group = species
             population_eval = {mem: self._cached_evaluation(mem) for mem in population}
 
             # Sorted population by evaluation. Largest/worst member first
