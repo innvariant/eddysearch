@@ -1,10 +1,13 @@
-# EddySearch
+# EddySearch  [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/) ![Tests](https://github.com/innvariant/eddysearch/workflows/Tests/badge.svg)
 Eddy is a collection of artificial function landscapes and search strategies to find their extrema points.
 Most artificial landscapes are in euclidean space and can simply be seen as a landscape of hills and valleys and the goal is to find the lowest or highest point within a given evaluation budget.
 This gives the possibility to compare optimization methods -- or often also known as search strategies -- in artificial settings:
 either for the curious mind, for pedagogical purpose or for fair experimental comparison.
 You can simply extend it with your own search strategy and see how well it works in these landscapes (objective functions).
 
+**Jump to ..**
+- [Installation](#installation)
+- [Introduction / Overview](#intro)
 
 # Installation
 - Install from PyPi via poetry: ``poetry install eddysearch``
