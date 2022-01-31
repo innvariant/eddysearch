@@ -1,14 +1,15 @@
-import numpy as np
 import itertools
 
-from eddy.search.population import PopulationSearch
+import numpy as np
+
+from eddysearch.search.population import PopulationSearch
 
 
 class GeneticSearch(PopulationSearch):
     # TODO: adapt to new interface with PopulationSearch
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._num_select_and_crossover = np.ceil(self.population_size/10)
+        self._num_select_and_crossover = np.ceil(self.population_size / 10)
 
     def encode(self, x):
         """
@@ -78,7 +79,7 @@ class GeneticSearch(PopulationSearch):
 
     def step(self):
         if self._objective is None:
-            raise ValueError('Objective is none. Have you forgot to call start()?')
+            raise ValueError("Objective is none. Have you forgot to call start()?")
 
         self._current_generation += 1
         population_eval = {member: self._eval_gene(member) for member in self._population}
@@ -97,17 +98,17 @@ class GeneticSearch(PopulationSearch):
             self._population.add(cross_gene)
 
         while len(self._population) < self._population_size:
-            operation = np.random.choice(['random', 'mutate'])
-            if operation is 'random':
+            operation = np.random.choice(["random", "mutate"])
+            if operation == "random":
                 new_random_member = self.sample_gene()
                 if new_random_member is None:
-                    raise ValueError('sample_gene() returned None but should return a randomly sampled gene for the population')
+                    raise ValueError("sample_gene() returned None but should return a randomly sampled gene for the population")
                 self._population.add(self.sample_gene())
             else:
                 member = np.random.choice(list(self._population))
                 new_member = self.mutate(member)
                 if new_member is None:
-                    raise ValueError('mutate(member) returned None but should return a randomly sampled gene for the population')
+                    raise ValueError("mutate(member) returned None but should return a randomly sampled gene for the population")
                 self._population.add(new_member)
 
     def end(self):
@@ -126,14 +127,14 @@ class GeneticGridSearch(GeneticSearch):
 
         # We encode as many alleles as we have dimensions
         self._num_alleles = self.num_dimensions
-        self._allele_codes = np.array([2**(i*binary_space)-1-(2**((i-1)*binary_space)-1) for i in range(1, self._num_alleles + 1)])
+        self._allele_codes = np.array([2**(i * binary_space) - 1 - (2**((i - 1) * binary_space) - 1) for i in range(1, self._num_alleles + 1)])
 
     def _restrict(self, allele):
-        return min(max(0, allele), 2**self._binary_space-1)
+        return min(max(0, allele), 2**self._binary_space - 1)
 
     def encode(self, x):
         assert len(x) == self._num_alleles
-        return sum(self._restrict(alelle)*(2**(pos*self._binary_space)) for pos, alelle in enumerate(x))
+        return sum(self._restrict(alelle) * (2**(pos * self._binary_space)) for pos, alelle in enumerate(x))
 
     def decode(self, gene):
         return np.array([(gene & code) >> (pos * self._binary_space) for pos, code in enumerate(self._allele_codes)])
@@ -141,7 +142,7 @@ class GeneticGridSearch(GeneticSearch):
     def phenotypical_mapping(self, gene):
         range_for_each_dimension = np.abs(np.subtract(self._lower, self._upper))
         bit_cover_area = 2**self._binary_space
-        discrete_steps_per_dimension = range_for_each_dimension/bit_cover_area
+        discrete_steps_per_dimension = range_for_each_dimension / bit_cover_area
         alleles = self.decode(gene)  # Each allele represents one covered block for the corresponding dimension
         lower_area = self._lower + discrete_steps_per_dimension * alleles
         upper_area = lower_area + discrete_steps_per_dimension
@@ -175,7 +176,7 @@ class GeneticGridSearch(GeneticSearch):
 
     def mutate(self, gene):
         gene_alleles = self.decode(gene)
-        gene_alleles += np.random.randint([-self._mutation_max]*len(gene_alleles), [self._mutation_max]*len(gene_alleles))
+        gene_alleles += np.random.randint([-self._mutation_max] * len(gene_alleles), [self._mutation_max] * len(gene_alleles))
         return self.encode(gene_alleles)
 
     def sample_random(self):
@@ -247,8 +248,8 @@ class GeneticRingSearch(GeneticSearch):
         radius2 = gene2_array[-1]
 
         # Calculate mid points
-        mid_point = (center_point1-center_point2)/2
-        mid_radius = np.array([(radius1-radius2)/2])
+        mid_point = (center_point1 - center_point2) / 2
+        mid_radius = np.array([(radius1 - radius2) / 2])
         return np.concatenate([mid_point, mid_radius]).tostring()
 
     def _get_gene_eval(self, gene):
@@ -285,8 +286,8 @@ class GeneticRingSearch(GeneticSearch):
 
         # Fill up population with new random members
         while len(self._population) < self._population_size:
-            operation = np.random.choice(['random', 'mutate'])
-            if operation is 'random':
+            operation = np.random.choice(["random", "mutate"])
+            if operation == "random":
                 self._population.add(self._encode_member(self.sample_random()))
             else:
                 chosen_member_idx = np.random.randint(0, len(self._population))
@@ -296,7 +297,7 @@ class GeneticRingSearch(GeneticSearch):
                     [-self._mutation_max_pos] * self._dimensions + [-self._mutation_max_radius],
                     [self._mutation_max_pos] * self._dimensions + [self._mutation_max_radius]
                 )
-                new_member = (np.fromstring(chosen_member)+mutation).tostring()
+                new_member = (np.fromstring(chosen_member) + mutation).tostring()
                 self._population.add(new_member)
 
     def end(self):

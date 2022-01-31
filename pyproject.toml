@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "eddy"
-version = "0.2.0"
+name = "eddysearch"
+version = "0.3.0"
 description = ""
 authors = [
     "Julian Stier <julian.stier@uni-passau.de>"
@@ -20,10 +20,49 @@ include = ["CHANGELOG.md"]
 [tool.poetry.dependencies]
 python = "^3.7"
 numpy = "^1.18"
-matplotlib = "^3.1"
+matplotlib = "^3.3"
 
 [tool.poetry.dev-dependencies]
+black = { version = "^20.8b1", python = "^3.6" }
+pre-commit = "^2.3.0"
 pytest = "^3.0"
+
+[tool.isort]
+profile = "black"
+line_length = 88
+force_single_line = true
+atomic = true
+include_trailing_comma = true
+lines_after_imports = 2
+lines_between_types = 1
+multi_line_output = 3
+use_parentheses = true
+filter_files = true
+src_paths = ["eddysearch", "tests"]
+skip_glob = [".venv/", "res/", "dist/"]
+known_first_party = "eddysearch"
+known_third_party = ["pytest", "matplotlib", "numpy" ]
+
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | res
+  | build
+  | dist
+  | tests/cache/
+  | tests/.*/setup.py
+)/
+'''
 
 [build-system]
 requires = ["poetry>=0.12"]
