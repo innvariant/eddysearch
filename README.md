@@ -25,3 +25,86 @@ The main intent is to provide insights into the differences of various search st
 ![CMA-ES Search over Himmelblau objective](res/himmelblau-cmaes.png)
 ![Adam Gradient Descent over Himmelblau objective](res/himmelblau-adam.png)
 ![Random Search over Rastrigin objective](res/rastrigin-random.png)
+
+
+
+# Artificial Landscapes
+.. also called [test functions for optimization on Wikipedia](https://en.wikipedia.org/wiki/Test_functions_for_optimization).
+
+
+### Himmelblau Function
+Also see [Wikipedia: Himmelblau's function](https://en.wikipedia.org/wiki/Himmelblau%27s_function).
+
+$`f(x,y) = (x^2+y-11(x+ y^2-7)^2)`$
+
+```python
+from eddysearch.objective import HimmelblauObjective
+
+obj = HimmelblauObjective()
+```
+
+
+
+### RastriginObjective
+
+```python
+from eddysearch.objective import RastriginObjective
+
+obj = RastriginObjective()
+```
+
+### RosenbrockObjective
+
+```python
+from eddysearch.objective import RosenbrockObjective
+
+obj = RosenbrockObjective()
+```
+
+
+### LeviN13Objective
+
+```python
+from eddysearch.objective import LeviN13Objective
+
+obj = LeviN13Objective()
+```
+
+
+### CrossInTrayObjective
+
+```python
+from eddysearch.objective import CrossInTrayObjective
+
+obj = CrossInTrayObjective()
+```
+
+
+### EggholderObjective
+```python
+from eddysearch.objective import EggholderObjective
+
+obj = EggholderObjective()
+```
+
+### Under Development
+* Stier2020A1Objective
+```python
+from eddysearch.objective import Stier2020A1Objective
+
+obj = Stier2020A1Objective()
+```
+
+* Stier2020A2Objective
+```python
+from eddysearch.objective import Stier2020A2Objective
+
+obj = Stier2020A2Objective()
+```
+
+* Stier2020BObjective
+```python
+from eddysearch.objective import Stier2020BObjective
+
+obj = Stier2020BObjective()
+```
