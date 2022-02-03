@@ -1,9 +1,12 @@
 import numpy as np
 
+from typing import Callable, Union
+
+from eddysearch.objective import Objective
 from eddysearch.strategy import SearchStrategy
 
 
-def derivative(fn, a, method="central", h=0.001):
+def derivative(fn: Callable[..., float], a: Union[float, np.ndarray], method: str="central", h: float=0.001):
     """Compute the difference formula for f'(a) with step size h.
 
     Parameters
@@ -25,6 +28,9 @@ def derivative(fn, a, method="central", h=0.001):
             forward: f(a+h) - f(a))/h
             backward: f(a) - f(a-h))/h
     """
+    if not isinstance(a, np.ndarray):
+        a = np.array([a])
+
     if hasattr(a, "ndim"):
         if a.ndim > 2:
             raise ValueError(
@@ -36,15 +42,12 @@ def derivative(fn, a, method="central", h=0.001):
     diffs = np.eye(len(a)) * h
     params = np.stack([a] * len(a))
     if method == "central":
-        # return (fn(a + h) - fn(a - h))/(2*h)
         return np.array(
             [(fn(p + d) - fn(p - d)) / (2 * h) for p, d in zip(params, diffs)]
         )
     elif method == "forward":
-        # return (fn(a + h) - fn(a))/h
         return np.array([(fn(p + d) - fn(p)) / h for p, d in zip(params, diffs)])
     elif method == "backward":
-        # return (fn(a) - fn(a - h))/h
         return np.array([(fn(p) - fn(p - d)) / h for p, d in zip(params, diffs)])
     else:
         raise ValueError("Method must be 'central', 'forward' or 'backward'.")
@@ -57,10 +60,10 @@ class GradientSearch(SearchStrategy):
     _current_pos = None
     _track_updates = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Union[int, np.ndarray], **kwargs: Union[int, np.ndarray]):
         super().__init__(*args, **kwargs)
 
-    def derivative(self, a, h=10e-8, method="central"):
+    def derivative(self, a: Union[int, np.ndarray], h: float=10e-8, method: str="central"):
         return derivative(self.objective, a, method=method, h=h)
 
     def initialize(self):
@@ -78,7 +81,7 @@ class GradientSearch(SearchStrategy):
         return self._track_updates
 
     @track_updates.setter
-    def track_updates(self, flag):
+    def track_updates(self, flag: bool):
         self._track_updates = True if flag else False
 
     @property
@@ -90,7 +93,7 @@ class GradientSearch(SearchStrategy):
         return self._current_step
 
     @current_step.setter
-    def current_step(self, value):
+    def current_step(self, value: int):
         self._current_step = int(value)
 
     @property
@@ -103,7 +106,7 @@ class GradientSearch(SearchStrategy):
         self._last_update = 0
         self._current_pos = None
 
-    def start(self, *args, **kwargs):
+    def start(self, *args: Union[Objective], **kwargs: Union[Objective]):
         super().start(*args, **kwargs)
 
         self._reset_values()
@@ -142,7 +145,7 @@ class GradientSearch(SearchStrategy):
 
 
 class SGDSearch(GradientSearch):
-    def __init__(self, *args, learning_rate=0.01, **kwargs):
+    def __init__(self, *args: Union[int, np.ndarray], learning_rate: float=0.01, **kwargs: Union[int, np.ndarray]):
         super().__init__(*args, **kwargs)
         self._learning_rate = learning_rate
 
@@ -158,7 +161,7 @@ class SGDSearch(GradientSearch):
 
 
 class MomentumSGDSearch(SGDSearch):
-    def __init__(self, *args, momentum=0.9, **kwargs):
+    def __init__(self, *args: Union[int, np.ndarray], momentum: float=0.9, **kwargs: Union[int, np.ndarray]):
         super().__init__(*args, **kwargs)
         self._momentum = momentum
 
@@ -175,7 +178,7 @@ class MomentumSGDSearch(SGDSearch):
 
 
 class NesterovMomentumSGDSearch(SGDSearch):
-    def __init__(self, *args, momentum=0.9, **kwargs):
+    def __init__(self, *args: Union[int, np.ndarray], momentum: float=0.9, **kwargs: Union[int, np.ndarray]):
         super().__init__(*args, **kwargs)
         self._momentum = momentum
 
@@ -193,7 +196,7 @@ class NesterovMomentumSGDSearch(SGDSearch):
 
 
 class AdamSGDSearch(SGDSearch):
-    def __init__(self, *args, beta1=0.9, beta2=0.999, epsilon=10e-8, **kwargs):
+    def __init__(self, *args: Union[int, np.ndarray], beta1: float=0.9, beta2: float=0.999, epsilon: float=10e-8, **kwargs: Union[int, np.ndarray]):
         super().__init__(*args, **kwargs)
         self._beta1 = beta1
         self._beta2 = beta2
