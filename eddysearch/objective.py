@@ -306,11 +306,11 @@ def goldstein_price1d(z):
     return (
         1
         + (x + y + 1) ** 2
-        * (19 - 14 * x + 3 * x ** 2 - 14 * y + 6 * x * y + 3 * y ** 2)
+        * (19 - 14 * x + 3 * x**2 - 14 * y + 6 * x * y + 3 * y**2)
     ) * (
         30
         + (2 * x - 3 * y) ** 2
-        * (18 - 32 * x + 12 * x ** 2 + 48 * y - 36 * x * y + 27 * y ** 2)
+        * (18 - 32 * x + 12 * x**2 + 48 * y - 36 * x * y + 27 * y**2)
     )
 
 
@@ -379,7 +379,7 @@ def himmelblau1d(z):
     x = z[0]
     y = z[1]
 
-    return (x ** 2 + y - 11) ** 2 + (x + y ** 2 - 7) ** 2
+    return (x**2 + y - 11) ** 2 + (x + y**2 - 7) ** 2
 
 
 def himmelblau(x):
@@ -423,7 +423,7 @@ def crossintray1d(z):
             abs(
                 np.sin(x)
                 * np.sin(y)
-                * np.exp(abs(100 - np.sqrt(x ** 2 + y ** 2) / np.pi))
+                * np.exp(abs(100 - np.sqrt(x**2 + y**2) / np.pi))
             )
             + 1
         )
@@ -511,7 +511,7 @@ def stier2020A1_1d(z):
     x = z[0]
     y = z[1]
 
-    return 1421 + 2 * x ** 2 - 4 * x * y ** 2 + 2 * y + (x / 3) ** 6 + (y / 3) ** 6
+    return 1421 + 2 * x**2 - 4 * x * y**2 + 2 * y + (x / 3) ** 6 + (y / 3) ** 6
 
 
 class Stier2020A1Objective(GenericObjective):
@@ -532,7 +532,7 @@ def stier2020A2_1d(z):
     x = z[0]
     y = z[1]
 
-    return 1700 - 4 * x * y ** 2 + (0.5 * y) ** 3 + (x / 3) ** 6 + (y / 3) ** 6
+    return 1700 - 4 * x * y**2 + (0.5 * y) ** 3 + (x / 3) ** 6 + (y / 3) ** 6
 
 
 class Stier2020A2Objective(GenericObjective):

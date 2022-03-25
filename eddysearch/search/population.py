@@ -215,6 +215,12 @@ class CMAESSearch(EvolutionarySearch):
 
 
 class SpeciesCMAESSearch(PopulationSearch):
+    """
+    Previous similar work:
+    https://hal.inria.fr/inria-00382093/document
+    Benchmarking a BI-Population CMA-ES on the BBOB-2009 Function Testbed
+    """
+
     def __init__(
         self, *args, learning_rate: float = 1, mu_important: int = None, **kwargs
     ):

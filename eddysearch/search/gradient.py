@@ -1,12 +1,18 @@
-import numpy as np
+from typing import Callable
+from typing import Union
 
-from typing import Callable, Union
+import numpy as np
 
 from eddysearch.objective import Objective
 from eddysearch.strategy import SearchStrategy
 
 
-def derivative(fn: Callable[..., float], a: Union[float, np.ndarray], method: str="central", h: float=0.001):
+def derivative(
+    fn: Callable[..., float],
+    a: Union[float, np.ndarray],
+    method: str = "central",
+    h: float = 0.001,
+):
     """Compute the difference formula for f'(a) with step size h.
 
     Parameters
@@ -63,7 +69,9 @@ class GradientSearch(SearchStrategy):
     def __init__(self, *args: Union[int, np.ndarray], **kwargs: Union[int, np.ndarray]):
         super().__init__(*args, **kwargs)
 
-    def derivative(self, a: Union[int, np.ndarray], h: float=10e-8, method: str="central"):
+    def derivative(
+        self, a: Union[int, np.ndarray], h: float = 10e-8, method: str = "central"
+    ):
         return derivative(self.objective, a, method=method, h=h)
 
     def initialize(self):
@@ -145,7 +153,12 @@ class GradientSearch(SearchStrategy):
 
 
 class SGDSearch(GradientSearch):
-    def __init__(self, *args: Union[int, np.ndarray], learning_rate: float=0.01, **kwargs: Union[int, np.ndarray]):
+    def __init__(
+        self,
+        *args: Union[int, np.ndarray],
+        learning_rate: float = 0.01,
+        **kwargs: Union[int, np.ndarray]
+    ):
         super().__init__(*args, **kwargs)
         self._learning_rate = learning_rate
 
@@ -161,7 +174,12 @@ class SGDSearch(GradientSearch):
 
 
 class MomentumSGDSearch(SGDSearch):
-    def __init__(self, *args: Union[int, np.ndarray], momentum: float=0.9, **kwargs: Union[int, np.ndarray]):
+    def __init__(
+        self,
+        *args: Union[int, np.ndarray],
+        momentum: float = 0.9,
+        **kwargs: Union[int, np.ndarray]
+    ):
         super().__init__(*args, **kwargs)
         self._momentum = momentum
 
@@ -178,7 +196,12 @@ class MomentumSGDSearch(SGDSearch):
 
 
 class NesterovMomentumSGDSearch(SGDSearch):
-    def __init__(self, *args: Union[int, np.ndarray], momentum: float=0.9, **kwargs: Union[int, np.ndarray]):
+    def __init__(
+        self,
+        *args: Union[int, np.ndarray],
+        momentum: float = 0.9,
+        **kwargs: Union[int, np.ndarray]
+    ):
         super().__init__(*args, **kwargs)
         self._momentum = momentum
 
@@ -196,7 +219,14 @@ class NesterovMomentumSGDSearch(SGDSearch):
 
 
 class AdamSGDSearch(SGDSearch):
-    def __init__(self, *args: Union[int, np.ndarray], beta1: float=0.9, beta2: float=0.999, epsilon: float=10e-8, **kwargs: Union[int, np.ndarray]):
+    def __init__(
+        self,
+        *args: Union[int, np.ndarray],
+        beta1: float = 0.9,
+        beta2: float = 0.999,
+        epsilon: float = 10e-8,
+        **kwargs: Union[int, np.ndarray]
+    ):
         super().__init__(*args, **kwargs)
         self._beta1 = beta1
         self._beta2 = beta2
@@ -215,9 +245,9 @@ class AdamSGDSearch(SGDSearch):
         )
         self._second_moment_estimate = self._beta2 * self._second_moment_estimate + (
             1 - self._beta2
-        ) * (grads ** 2)
-        bias_correction1 = 1 - self._beta1 ** self.current_step
-        bias_correction2 = 1 - self._beta2 ** self.current_step
+        ) * (grads**2)
+        bias_correction1 = 1 - self._beta1**self.current_step
+        bias_correction2 = 1 - self._beta2**self.current_step
 
         # first_moment_avg = self._first_moment_estimate / bias_correction1
         # second_moment_avg = self._second_moment_estimate / bias_correction2

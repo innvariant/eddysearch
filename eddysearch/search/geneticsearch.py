@@ -93,7 +93,7 @@ class GeneticSearch(PopulationSearch):
 
         # Remove largest k**2 members
         k = int(self._num_select_and_crossover)
-        for idx in range(min(k ** 2, len(sorted_population))):
+        for idx in range(min(k**2, len(sorted_population))):
             self._population.remove(sorted_population[idx])
 
         # Crossover smallest members k yielding new k**2 member
@@ -147,7 +147,7 @@ class GeneticGridSearch(GeneticSearch):
         )
 
     def _restrict(self, allele):
-        return min(max(0, allele), 2 ** self._binary_space - 1)
+        return min(max(0, allele), 2**self._binary_space - 1)
 
     def encode(self, x):
         assert len(x) == self._num_alleles
@@ -166,7 +166,7 @@ class GeneticGridSearch(GeneticSearch):
 
     def phenotypical_mapping(self, gene):
         range_for_each_dimension = np.abs(np.subtract(self._lower, self._upper))
-        bit_cover_area = 2 ** self._binary_space
+        bit_cover_area = 2**self._binary_space
         discrete_steps_per_dimension = range_for_each_dimension / bit_cover_area
         # Each allele represents one covered block for the corresponding dimension
         alleles = self.decode(gene)
@@ -269,7 +269,7 @@ class GeneticRingSearch(GeneticSearch):
         # Sample one point from the hypersphere with dimension self._dimensions
         # See http://mathworld.wolfram.com/HyperspherePointPicking.html
         normal_deviates = np.random.normal(size=(self._dimensions, 1))
-        norm = np.sqrt((normal_deviates ** 2).sum(axis=0))
+        norm = np.sqrt((normal_deviates**2).sum(axis=0))
         points = center_point + ((radius * normal_deviates) / norm)
 
         # Restrict the sampled point on the hypersphere with boundaries defined for each dimension
@@ -326,7 +326,7 @@ class GeneticRingSearch(GeneticSearch):
 
         # Remove largest k**2 members
         k = int(self._num_select_and_crossover)
-        for idx in range(min(k ** 2, len(sorted_population))):
+        for idx in range(min(k**2, len(sorted_population))):
             self._population.remove(sorted_population[idx])
 
         # Crossover smallest members k yielding new k**2 member
