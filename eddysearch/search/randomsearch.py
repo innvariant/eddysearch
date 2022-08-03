@@ -22,7 +22,7 @@ class RandomSearch(SearchStrategy):
         pass
 
     def __str__(self):
-        return "RandomSearch(dim=%s)" % (self._dimensions)
+        return f"RandomSearch(dim={self._dimensions})"
 
 
 class RandomUniformSearch(RandomSearch):
@@ -30,4 +30,4 @@ class RandomUniformSearch(RandomSearch):
         return np.random.uniform(self._lower, self._upper)
 
     def __str__(self):
-        return "RandomUniformSearch(dim=%s)" % (self._dimensions)
+        return f"RandomUniformSearch(dim={self._dimensions})"

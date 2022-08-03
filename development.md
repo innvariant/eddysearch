@@ -35,3 +35,4 @@ Run ``act``
 - Add pre-commit to your local git: ``poetry run pre-commit install``
 - Auto-Update pre-commits: ``poetry run pre-commit autoupdate``
 - Clean and gc for pre-commit: ``poetry run pre-commit clean`` and ``poetry run pre-commit gc``
+- Cirumventing hooks in git: `` git commit -m "unverified commit" --no-verify``

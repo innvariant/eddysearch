@@ -3,22 +3,22 @@ import numpy as np
 from eddysearch.objective import Objective
 
 
-class SearchRunner(object):
+class SearchRunner:
     def __init__(
         self,
         objective: Objective,
         strategy,
         soft_evaluation_limit=1000,
         hard_evaluation_limit=1100,
-        soft_bounded_search=True,
-        bounded_search=False,
+        soft_bounded_search: bool = True,
+        bounded_search: bool = False,
     ):
         self._objective = objective
         self._strategy = strategy
         self._soft_evaluation_limit = soft_evaluation_limit
         self._hard_evaluation_limit = hard_evaluation_limit
-        self._soft_bounded_search = True if soft_bounded_search else False
-        self._bounded_search = True if bounded_search else False
+        self._soft_bounded_search = bool(soft_bounded_search)
+        self._bounded_search = bool(bounded_search)
 
     def run(self):
         self._num_evaluations = 0
@@ -34,22 +34,21 @@ class SearchRunner(object):
                 raise StopIteration()
 
             # For bounded searches, check if the vector is within the allowed search bounds
-            if self._soft_bounded_search or self._bounded_search:
-                if not np.all(x >= self._objective.search_bounds[:, 0]) or not np.all(
-                    x <= self._objective.search_bounds[:, 1]
-                ):
-                    if self._bounded_search:
-                        raise ValueError(
-                            "Trying to evaluate x=%s which is out of bounds %s"
-                            % (x, self._objective.search_bounds)
-                        )
-                    else:
-                        import warnings
+            if (self._soft_bounded_search or self._bounded_search) and (
+                not np.all(x >= self._objective.search_bounds[:, 0])
+                or not np.all(x <= self._objective.search_bounds[:, 1])
+            ):
+                if self._bounded_search:
+                    raise ValueError(
+                        "Trying to evaluate x=%s which is out of bounds %s"
+                        % (x, self._objective.search_bounds)
+                    )
+                else:
+                    import warnings
 
-                        warnings.warn(
-                            "Evaluating x=%s which is out of bounds %s"
-                            % (x, self._objective.search_bounds)
-                        )
+                    warnings.warn(
+                        f"Evaluating x={x} which is out of bounds {self._objective.search_bounds}"
+                    )
 
             group = self._strategy.current_group  # hashable group
             if group not in self._current_search_group:
@@ -89,7 +88,7 @@ class SearchRunner(object):
         self._strategy.end()
 
 
-class SearchStrategy(object):
+class SearchStrategy:
     def __init__(self, dimensions: int, lower: np.ndarray, upper: np.ndarray):
         self._dimensions = dimensions
         assert len(lower.shape) == 1

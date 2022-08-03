@@ -22,5 +22,6 @@ exclude =
     .pytest_cache
     .vscode
     .github
-    res
+    res/
     tests/cache/
+    examples/

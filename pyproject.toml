@@ -38,7 +38,7 @@ multi_line_output = 3
 use_parentheses = true
 filter_files = true
 src_paths = ["eddysearch", "tests"]
-skip_glob = [".venv/", "res/", "dist/"]
+skip_glob = [".venv/", "res/", "dist/", "examples/"]
 known_first_party = "eddysearch"
 known_third_party = ["pytest", "matplotlib", "numpy" ]
 
@@ -56,6 +56,7 @@ exclude = '''
   | _build
   | buck-out
   | res
+  | examples/
   | build
   | dist
   | tests/cache/

@@ -90,7 +90,7 @@ class GradientSearch(SearchStrategy):
 
     @track_updates.setter
     def track_updates(self, flag: bool):
-        self._track_updates = True if flag else False
+        self._track_updates = bool(flag)
 
     @property
     def last_update(self):
@@ -123,7 +123,7 @@ class GradientSearch(SearchStrategy):
 
         # Do an initial evaluation of the objective for the initial position
         self.objective(self._current_pos)
-        print("Starting at %s" % self._current_pos)
+        print(f"Starting at {self._current_pos}")
 
     def step(self):
         self.current_step += 1
@@ -139,8 +139,7 @@ class GradientSearch(SearchStrategy):
         # Perform the update-step -- updates are subtracted, not added! Thus the last_update is usually positive
         self._current_pos -= update
 
-        # Make sure our position is not running out of allowed bounds
-        # self._current_pos = np.minimum(np.maximum(self._current_pos, self._lower), self._upper)
+        # TODO Make sure our position is not running out of allowed bounds
 
     def has_finished(self) -> bool:
         return False  # never stop
@@ -157,7 +156,7 @@ class SGDSearch(GradientSearch):
         self,
         *args: Union[int, np.ndarray],
         learning_rate: float = 0.01,
-        **kwargs: Union[int, np.ndarray]
+        **kwargs: Union[int, np.ndarray],
     ):
         super().__init__(*args, **kwargs)
         self._learning_rate = learning_rate
@@ -170,7 +169,7 @@ class SGDSearch(GradientSearch):
         return self._learning_rate * grads
 
     def __str__(self):
-        return "SGDSearch(lr=%s)" % self._learning_rate
+        return f"SGDSearch(lr={self._learning_rate})"
 
 
 class MomentumSGDSearch(SGDSearch):
@@ -178,7 +177,7 @@ class MomentumSGDSearch(SGDSearch):
         self,
         *args: Union[int, np.ndarray],
         momentum: float = 0.9,
-        **kwargs: Union[int, np.ndarray]
+        **kwargs: Union[int, np.ndarray],
     ):
         super().__init__(*args, **kwargs)
         self._momentum = momentum
@@ -189,10 +188,7 @@ class MomentumSGDSearch(SGDSearch):
         return -update
 
     def __str__(self):
-        return "MomentumSGDSearch(lr=%s, momentum=%s)" % (
-            self._learning_rate,
-            self._momentum,
-        )
+        return f"MomentumSGDSearch(lr={self._learning_rate}, momentum={self._momentum})"
 
 
 class NesterovMomentumSGDSearch(SGDSearch):
@@ -200,7 +196,7 @@ class NesterovMomentumSGDSearch(SGDSearch):
         self,
         *args: Union[int, np.ndarray],
         momentum: float = 0.9,
-        **kwargs: Union[int, np.ndarray]
+        **kwargs: Union[int, np.ndarray],
     ):
         super().__init__(*args, **kwargs)
         self._momentum = momentum
@@ -212,10 +208,7 @@ class NesterovMomentumSGDSearch(SGDSearch):
         return update
 
     def __str__(self):
-        return "NesterovMomentumSGDSearch(lr=%s, momentum=%s)" % (
-            self._learning_rate,
-            self._momentum,
-        )
+        return f"NesterovMomentumSGDSearch(lr={self._learning_rate}, momentum={self._momentum})"
 
 
 class AdamSGDSearch(SGDSearch):
@@ -225,7 +218,7 @@ class AdamSGDSearch(SGDSearch):
         beta1: float = 0.9,
         beta2: float = 0.999,
         epsilon: float = 10e-8,
-        **kwargs: Union[int, np.ndarray]
+        **kwargs: Union[int, np.ndarray],
     ):
         super().__init__(*args, **kwargs)
         self._beta1 = beta1
@@ -249,9 +242,6 @@ class AdamSGDSearch(SGDSearch):
         bias_correction1 = 1 - self._beta1**self.current_step
         bias_correction2 = 1 - self._beta2**self.current_step
 
-        # first_moment_avg = self._first_moment_estimate / bias_correction1
-        # second_moment_avg = self._second_moment_estimate / bias_correction2
-        # update = (self._learning_rate * first_moment_avg) / (np.sqrt(second_moment_avg) + self._epsilon)
         # Using trick from https://github.com/pytorch/pytorch/blob/cd9b27231b51633e76e28b6a34002ab83b0660fc/torch/optim/adam.py
         step_size = self._learning_rate * np.sqrt(bias_correction2) / bias_correction1
         update = step_size + self._first_moment_estimate / (
@@ -261,9 +251,4 @@ class AdamSGDSearch(SGDSearch):
         return update
 
     def __str__(self):
-        return "AdamSGDSearch(lr=%s, beta1=%s, beta2=%s, epsilon=%s)" % (
-            self._learning_rate,
-            self._beta1,
-            self._beta2,
-            self._epsilon,
-        )
+        return f"AdamSGDSearch(lr={self._learning_rate}, beta1={self._beta1}, beta2={self._beta2}, epsilon={self._epsilon})"

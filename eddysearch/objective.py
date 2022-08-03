@@ -2,7 +2,7 @@ import matplotlib.colors
 import numpy as np
 
 
-class Objective(object):
+class Objective:
     """
     An interface for n-dimensional objective functions.
     It tracks the number of evaluations of the objective and -- if desired -- the argument history.
@@ -48,7 +48,7 @@ class Objective(object):
 
     @track_history.setter
     def track_history(self, flag):
-        self._track_history = True if flag else False
+        self._track_history = bool(flag)
 
     @property
     def search_bounds(self):
@@ -133,7 +133,7 @@ class Objective(object):
             return np.array([callback(x1d) for x1d in x])
         else:
             raise ValueError(
-                'Too many number of dimensions given to objective function "%s"' % self
+                f"Too many number of dimensions given to objective function '{self}'"
             )
 
     def evaluate_visual(self, x, z_shift=None):
@@ -169,8 +169,8 @@ class Objective(object):
 
 
 class RastriginObjective(Objective):
-    def __init__(self, n_dim=2, A=10):
-        self._A = A
+    def __init__(self, n_dim=2, a=10):
+        self._a = a
         self._n_dim = n_dim
 
         self._search_bounds = np.array([[-5, 5]] * self._n_dim)
@@ -199,17 +199,14 @@ class RastriginObjective(Objective):
     def _call(self, x: np.ndarray, *args, **kwargs):
         assert (
             x.shape[0] == self._n_dim
-        ), "Rastrigin was defined with dim=%s but was called with shape %s" % (
-            self._n_dim,
-            x.shape,
-        )
+        ), f"Rastrigin was defined with dim={self._n_dim} but was called with shape {x.shape}"
         n = self._n_dim
-        return self._A * n + sum(
-            x[d] ** 2 - self._A * np.cos(2 * np.pi * x[d]) for d in range(n)
+        return self._a * n + sum(
+            x[d] ** 2 - self._a * np.cos(2 * np.pi * x[d]) for d in range(n)
         )
 
     def __str__(self):
-        return "Rastrigin(dim=%s, A=%s)" % (self._n_dim, self._A)
+        return f"Rastrigin(dim={self._n_dim}, A={self._a})"
 
 
 class GenericObjective(Objective):
@@ -219,9 +216,14 @@ class GenericObjective(Objective):
         search_bounds,
         minima,
         visualization_bounds=None,
-        color_normalizer=matplotlib.colors.NoNorm(),
+        color_normalizer=None,
         n_dim=2,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.NoNorm()
+        )
         self._fn = fn
         self._n_dim = n_dim
 
@@ -253,25 +255,22 @@ class GenericObjective(Objective):
     def _call(self, x: np.ndarray, *args, **kwargs):
         assert (
             x.shape[0] is self._n_dim
-        ), "Objective was defined with dim=%s but was called with shape %s" % (
-            self._n_dim,
-            x.shape,
-        )
+        ), f"Objective was defined with dim={self._n_dim} but was called with shape {x.shape}"
         return self._fn(x)
 
     def __str__(self):
-        return "%s(dim=%s)" % (self._fn.__name__, self._n_dim)
+        return f"{self._fn.__name__}(dim={self._n_dim})"
 
 
-def rastrigin1d(x, A=10):
+def rastrigin1d(x, a=10):
     assert isinstance(x, (np.ndarray, np.generic))
     assert x.ndim == 1
     n = x.shape[0]
-    return A * n + sum(x[d] ** 2 - A * np.cos(2 * np.pi * x[d]) for d in range(n))
+    return a * n + sum(x[d] ** 2 - a * np.cos(2 * np.pi * x[d]) for d in range(n))
 
 
-def rastrigin(x, A=10):
-    return _batched(rastrigin1d, x, A)
+def rastrigin(x, a=10):
+    return _batched(rastrigin1d, x, a)
 
 
 def rosenbrock1d(x, a=1, b=100):
@@ -288,9 +287,19 @@ def rosenbrock(x, a=1, b=100):
 class RosenbrockObjective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-2, 2], [-2, 2]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-2, 2], [-2, 2]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[1] * ndim])
         super().__init__(rosenbrock1d, search_bounds, minima, ndim, color_normalizer)
@@ -327,9 +336,19 @@ def goldstein_price(x):
 class GoldsteinPriceObjective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-2, 2], [-2, 2]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-2, 2], [-2, 2]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[0, -1]])
         super().__init__(
@@ -364,9 +383,19 @@ def levi_n13(x):
 class LeviN13Objective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-8, 8], [-8, 8]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-8, 8], [-8, 8]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[1, 1]])
         super().__init__(levi_n13_1d, search_bounds, minima, ndim, color_normalizer)
@@ -395,9 +424,19 @@ def himmelblau(x):
 class HimmelblauObjective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-5, 5], [-5, 5]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-5, 5], [-5, 5]])
+        )
         ndim = len(search_bounds)
         minima = np.array(
             [
@@ -443,9 +482,19 @@ def crossintray(x):
 class CrossInTrayObjective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-5, 5], [-5, 5]]),
-        color_normalizer=matplotlib.colors.NoNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.NoNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-5, 5], [-5, 5]])
+        )
         ndim = len(search_bounds)
         minima = np.array(
             [
@@ -482,9 +531,19 @@ def eggholder(x):
 class EggholderObjective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-550, 550], [-420, 420]]),
-        color_normalizer=matplotlib.colors.NoNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.NoNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-550, 550], [-420, 420]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[512, 404.2319]])
         super().__init__(eggholder1d, search_bounds, minima, ndim, color_normalizer)
@@ -499,12 +558,11 @@ def _batched(fn, x, *args):
         return np.array([fn(x1d, *args) for x1d in x])
     else:
         raise ValueError(
-            'Too many number of dimensions given to objective function "%s"'
-            % fn.__name__
+            f"Too many number of dimensions given to objective function '{fn.__name__}'"
         )
 
 
-def stier2020A1_1d(z):
+def stier2020a1_1d(z):
     assert isinstance(z, (np.ndarray, np.generic))
     assert z.ndim == 1
 
@@ -517,15 +575,25 @@ def stier2020A1_1d(z):
 class Stier2020A1Objective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-12, 12], [-12, 12]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-12, 12], [-12, 12]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[8.31373, -9.48875] * ndim])  # Not analytically proven
-        super().__init__(stier2020A1_1d, search_bounds, minima, ndim, color_normalizer)
+        super().__init__(stier2020a1_1d, search_bounds, minima, ndim, color_normalizer)
 
 
-def stier2020A2_1d(z):
+def stier2020a2_1d(z):
     assert isinstance(z, (np.ndarray, np.generic))
     assert z.ndim == 1
 
@@ -538,26 +606,31 @@ def stier2020A2_1d(z):
 class Stier2020A2Objective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-15, 15], [-15, 15]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-15, 15], [-15, 15]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[8.31373, -9.48875] * ndim])  # Not analytically proven
-        super().__init__(stier2020A2_1d, search_bounds, minima, ndim, color_normalizer)
+        super().__init__(stier2020a2_1d, search_bounds, minima, ndim, color_normalizer)
 
 
-def stier2020B1d(z):
+def stier2020b1d(z):
     assert isinstance(z, (np.ndarray, np.generic))
     assert z.ndim == 1
 
     x = z[0]
     y = z[1]
 
-    # return np.sin(x)-x*y+(x/4)**4+(y/4)**4
-    # return 2+np.sin(10*x)-np.sin(x)*y+(x/4)**4+(y/4)**4
-    # return 10-np.sin(x)*y+(x/4)**4+(y/4)**4
-    # return 8+2*np.sin(x+2*y)*y+(x/4)**4+(y/4)**4
-    # return 20 + x - 1.5*(y-5) + 2 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
     return (
         20 + x - 1.8 * (y - 5) + 3 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
     )
@@ -566,33 +639,19 @@ def stier2020B1d(z):
 class Stier2020BObjective(GenericObjective):
     def __init__(
         self,
-        search_bounds=np.array([[-10, 10], [-10, 10]]),
-        color_normalizer=matplotlib.colors.LogNorm(),
+        search_bounds=None,
+        color_normalizer=None,
     ):
+        color_normalizer = (
+            color_normalizer
+            if color_normalizer is not None
+            else matplotlib.colors.LogNorm()
+        )
+        search_bounds = (
+            np.array(search_bounds)
+            if search_bounds is not None
+            else np.array([[-10, 10], [-10, 10]])
+        )
         ndim = len(search_bounds)
         minima = np.array([[0.87902855, 5.05756791] * ndim])  # Not analytically proven
-        super().__init__(stier2020B1d, search_bounds, minima, ndim, color_normalizer)
-
-
-def bahar1d(z):
-    assert isinstance(z, (np.ndarray, np.generic))
-    assert z.ndim == 1
-
-    x = z[0]
-    y = z[1]
-
-    # return np.maximum(0, x)
-    return np.maximum(0, x) ** 2 + (x / 4) ** 4 + (y / 4) ** 4
-
-
-class BaharObjective(GenericObjective):
-    def __init__(
-        self,
-        search_bounds=np.array([[-10, 10], [-10, 10]]),
-        color_normalizer=matplotlib.colors.NoNorm(),
-    ):
-        ndim = len(search_bounds)
-        minima = (
-            np.array([[0.87902855, 5.05756791] * ndim]),
-        )  # Not analytically proven
-        super().__init__(bahar1d, search_bounds, minima, ndim, color_normalizer)
+        super().__init__(stier2020b1d, search_bounds, minima, ndim, color_normalizer)
